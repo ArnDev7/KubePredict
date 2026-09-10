@@ -1,0 +1,94 @@
+# KubePredict Frozen Forecast Configuration (Phase 8B)
+# Status: offline_selected — NOT production_ready.
+# Selected for subsequent KubePredict controller integration
+# within the evaluated datasets and constraints.
+
+schema_version: "1.0.0"
+status: "offline_selected"
+
+# Default controller integration settings
+model_family: "persistence"
+model_name: "persistence"
+model_version: "1.0.0"
+parameters: {}
+target_column: "request_rate_per_second"
+sampling_interval_seconds: 15.0
+
+# Default controller horizon (1 step = 15 seconds)
+default_controller_horizon_steps: 1
+default_controller_horizon_seconds: 15.0
+
+# All supported horizons
+supported_horizons:
+  - horizon_steps: 1
+    horizon_seconds: 15.0
+  - horizon_steps: 2
+    horizon_seconds: 30.0
+  - horizon_steps: 4
+    horizon_seconds: 60.0
+
+# Per-horizon frozen model selections
+per_horizon_models:
+  1:
+    model_family: "persistence"
+    parameters: {}
+    minimum_history: 1
+    validation_macro_mae: 5.0882
+    status: "persistence_retained"
+  2:
+    model_family: "persistence"
+    parameters: {}
+    minimum_history: 1
+    validation_macro_mae: 11.3645
+    status: "persistence_retained"
+  4:
+    model_family: "linear_trend"
+    parameters:
+      window: 8
+    minimum_history: 8
+    validation_macro_mae: 18.7430
+    status: "offline_selected"
+
+# Minimum history requirement (largest across all horizons)
+minimum_history: 1
+
+# Non-negative output policy
+non_negative_output: true
+
+# Missing-data behavior
+missing_data_policy: "exclude_origin"
+
+# Persistence fallback
+persistence_fallback_enabled: true
+
+# Selection provenance
+selection_evaluation_id: "eval-20260910_180143"
+selection_audit_id: "audit-20260910_184406"
+input_dataset_index_hash: "7a5fd04383a1dacbfc6bd9f489b6eaf27f5d740cb15584308ad2b78b24ee3ab0"
+
+# Validation metric summary (per default horizon)
+validation_metric_summary:
+  horizon_steps: 1
+  model_name: "persistence"
+  macro_mae: 5.0882
+  macro_rmse: 6.4936
+  macro_smape: 6.858
+  scenarios_evaluated: 5
+  scenarios_beating_persistence: 0
+  scenarios_tied_persistence: 5
+
+# Required scenarios
+required_scenarios:
+  - "steady"
+  - "ramp"
+  - "periodic"
+  - "sudden_increase"
+  - "drift"
+
+# Known weaknesses
+known_weaknesses:
+  - "Persistence is a naive baseline; it has zero lead-time advantage for proactive scaling."
+  - "Horizon 4 selection (linear_trend window=8) has high MAE on steady (35.08 val, 79.69 test) and periodic (18.21 val) scenarios."
+  - "Horizon 4 linear_trend has a 33% exclusion rate on short scenario runs due to 8-step history requirement."
+  - "Limited telemetry dataset size (~15-19 samples per scenario, 3 per validation/test partition)."
+  - "No startup-delay measurement exists for controller horizon engineering."

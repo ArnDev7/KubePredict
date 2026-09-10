@@ -39,15 +39,27 @@ Implemented:
 - Four forecasting baseline families (Persistence, Trailing Moving Average, EWMA, Linear Trend)
 - Strict chronological rolling-origin evaluation without future data leakage
 - Comprehensive metrics (MAE, RMSE, sMAPE, Bias) and provisional candidate selection
+- Independent forecasting audit, leakage verification, and robustness analysis (Phase 8B)
+- Behavioral leakage-trap test suite (6 traps) and clean-room independent metric reproduction
+- Frozen forecasting model configuration (`forecasting/config/final_forecaster.yaml`) with status `offline_selected`
+- Pure in-process `ForecastingService` wrapper with persistence fallback and typed runtime contracts (`ForecastInput`, `ForecastOutput`)
+- Documented audit report, scenario robustness, and parameter sensitivity in `docs/FORECAST_SELECTION.md`
+- Live Prometheus telemetry reader and observe-only controller (Phase 9A)
+- Frozen `ForecastingService` integration with real-time request-rate observations
+- Pending forecast lifecycle, future actual matching, and residual evidence capture
+- Isolated Prometheus operational metrics server (`http://127.0.0.1:9101/metrics`)
+- Static write-capability audit verifying zero Kubernetes write capability in controller runtime
+- Documented observe-only architecture in `docs/OBSERVE_ONLY_CONTROLLER.md`
 - Comprehensive unit, integration, and manifest test suites
 
 Not implemented:
-- Live Prometheus metric polling for controller operation (scheduled for future phase)
-- Replica calculation and scaling recommendation logic (scheduled for future phase)
-- Predictive scaling controller and forecast guard (scheduled for future phase)
-- Live cluster autoscaling and controller comparisons (scheduled for future phase)
-- Formal comparative experiment execution and benchmark claims (scheduled for future phase)
-- Statistical result analysis and performance conclusions (scheduled for future phase)
+- Desired-replica calculation and capacity transfer model (scheduled for Phase 9B)
+- Scaling decision creation and scaling direction recommendations (scheduled for Phase 9B)
+- Forecast safety guard, burst override, and drift handling (scheduled for Phase 9B)
+- Reactive scaling fallback and live scaling actuators (scheduled for Phase 9B/10)
+- Controller Kubernetes Deployment and ServiceAccount (scheduled for Phase 9B)
+- Formal comparative experiment execution and benchmark claims (scheduled for Phase 10)
+- Statistical result analysis and performance conclusions (scheduled for Phase 10)
 
 ## Open-source stack
 
@@ -66,11 +78,13 @@ Never claim improved latency, resource efficiency, prediction accuracy, or SLO c
 
 ## Project Structure
 - `app/`: FastAPI workload service and Prometheus metrics.
+- `forecasting/`: Offline forecasting engine, baselines, audit suite, and pure in-process service wrapper.
 - `shared/`: Enums, Pydantic models, validation logic.
 - `config/`: Type-safe settings loading.
 - `kubernetes/base/`: Declarative Kustomize base manifests (Namespace, ConfigMap, Deployment, Service).
 - `kubernetes/kind/`: kind cluster topology configuration.
 - `scripts/docker/`: Docker build, run, test, and stop helper scripts.
+- `scripts/forecasting/`: Forecasting baseline evaluation, audit, and model validation scripts.
 - `scripts/kubernetes/`: Kubernetes cluster management, manifest deployment, inspection, and port-forwarding scripts.
 - `tests/`: Pytest test suite (unit and integration tests).
 

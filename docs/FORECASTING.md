@@ -188,8 +188,22 @@ results/summaries/forecasting/<evaluation-id>/
 
 ---
 
-## 11. Scope Limitations & Research Constraints
+## 11. Phase 8B Audit and Frozen Model Selection
+
+Phase 8B executed a comprehensive independent audit of the Phase 8A evaluation pipeline and baseline outputs, verifying:
+- **Input Data Immutability:** SHA-256 verification of raw datasets and configuration.
+- **Chronological Split Integrity:** Monotonic partitions without gaps or overlaps.
+- **Leakage Traps:** 6 explicit behavioral tests passing (future perturbation, split perturbation, target column, timestamp offset, scenario boundary, preprocessing fit).
+- **Independent Metric Reproduction:** Exact match for MAE, RMSE, sMAPE, and bias within $1 \times 10^{-4}$.
+- **Scenario Robustness:** Persistence retained for Horizons 1 and 2; Linear Trend ($w=8$) selected for Horizon 4 with documented weaknesses and mandatory persistence fallback.
+- **Frozen Configuration:** Stored in [`forecasting/config/final_forecaster.yaml`](file:///forecasting/config/final_forecaster.yaml) with status `offline_selected`.
+- **Pure In-Process Service:** Runtime contract implemented via `ForecastingService` in [`forecasting/service.py`](file:///forecasting/service.py).
+- **Full Report:** See [`docs/FORECAST_SELECTION.md`](file:///docs/FORECAST_SELECTION.md).
+
+---
+
+## 12. Scope Limitations & Research Constraints
 
 - **No Controller Code**: This phase contains no Kubernetes client, no Prometheus polling daemon, no replica sizing logic, no forecast guard, and no reactive fallback.
-- **No Production Claims**: Models selected as provisional candidates are for Phase 8B offline review only.
+- **No Production Claims**: Status is strictly `offline_selected` — NOT `production_ready`. Models are evaluated purely offline on captured telemetry datasets.
 - **Independent Execution**: Forecasting scripts operate entirely offline from raw CSV files without requiring Kubernetes, Docker, or external network connectivity.

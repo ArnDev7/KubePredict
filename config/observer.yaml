@@ -1,0 +1,17 @@
+# KubePredict Observe-Only Controller Configuration (Phase 9A)
+schema_version: "1.0.0"
+mode: "observe"
+prometheus_url: "http://127.0.0.1:9090"
+query: 'sum(rate(apa_http_requests_total{job="kubepredict-workload"}[1m]))'
+sampling_interval_seconds: 15.0
+history_window_seconds: 180.0
+forecast_interval_seconds: 15.0
+forecast_horizon_steps: 1
+telemetry_stale_after_seconds: 30.0
+request_timeout_seconds: 10.0
+maximum_retries: 3
+maximum_cycles: 10
+output_root: "experiments/output/controller-observe"
+frozen_forecaster_config: "forecasting/config/final_forecaster.yaml"
+metrics_host: "127.0.0.1"
+metrics_port: 9101

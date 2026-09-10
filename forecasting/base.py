@@ -1,11 +1,14 @@
 """Base classes and configuration contracts for offline forecasting."""
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from shared.validation import require_timezone_aware
 
 
 class ForecastingConfig(BaseModel):
@@ -168,3 +171,80 @@ class BaseForecaster(ABC):
             "parameters": self.parameters,
             "minimum_history_required": self.minimum_history_required,
         }
+
+
+class ForecastInput(BaseModel):
+    """Runtime input contract for pure in-process forecasting service."""
+
+    generated_at: datetime
+    sampling_interval_seconds: float = Field(gt=0.0)
+    observations: list[float]
+    observation_timestamps: list[datetime]
+    requested_horizon_steps: int = Field(gt=0)
+
+    model_config = {"extra": "forbid"}
+
+    @model_validator(mode="after")
+    def validate_contract(self) -> "ForecastInput":
+        self.generated_at = require_timezone_aware(self.generated_at)
+        if len(self.observations) != len(self.observation_timestamps):
+            raise ValueError(
+                f"Length of observations ({len(self.observations)}) must match "
+                f"length of observation_timestamps ({len(self.observation_timestamps)})"
+            )
+        if len(self.observations) == 0:
+            raise ValueError("observations must not be empty")
+
+        for i, ts in enumerate(self.observation_timestamps):
+            require_timezone_aware(ts)
+            if i > 0 and ts <= self.observation_timestamps[i - 1]:
+                raise ValueError(
+                    f"observation_timestamps must be strictly chronological: {ts} <= {self.observation_timestamps[i - 1]}"
+                )
+
+        for val in self.observations:
+            if not np.isfinite(val):
+                raise ValueError(f"Observation value must be finite, got {val}")
+            if val < 0.0:
+                raise ValueError(f"Observation value must be non-negative, got {val}")
+
+        return self
+
+
+class ForecastOutput(BaseModel):
+    """Runtime output contract for pure in-process forecasting service."""
+
+    generated_at: datetime
+    model_name: str = Field(min_length=1)
+    model_version: str = Field(min_length=1)
+    horizon_steps: int = Field(gt=0)
+    horizon_seconds: float = Field(gt=0.0)
+    predicted_values: list[float]
+    predicted_request_rate_per_second: float = Field(ge=0.0)
+    confidence_inputs: dict[str, Any] = Field(default_factory=dict)
+    history_count: int = Field(gt=0)
+    fallback_used: bool = False
+    warnings: list[str] = Field(default_factory=list)
+
+    model_config = {"extra": "forbid"}
+
+    @model_validator(mode="after")
+    def validate_output(self) -> "ForecastOutput":
+        self.generated_at = require_timezone_aware(self.generated_at)
+        if len(self.predicted_values) != self.horizon_steps:
+            raise ValueError(
+                f"predicted_values length ({len(self.predicted_values)}) must match "
+                f"horizon_steps ({self.horizon_steps})"
+            )
+        for val in self.predicted_values:
+            if not np.isfinite(val):
+                raise ValueError(f"Predicted value must be finite, got {val}")
+            if val < 0.0:
+                raise ValueError(f"Predicted value must be non-negative, got {val}")
+
+        # The final scalar predicted_request_rate_per_second must match the horizon point forecast
+        if not np.isclose(self.predicted_request_rate_per_second, self.predicted_values[-1]):
+            raise ValueError(
+                "predicted_request_rate_per_second must equal the final horizon step prediction in predicted_values"
+            )
+        return self

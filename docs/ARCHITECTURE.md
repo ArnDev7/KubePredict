@@ -133,11 +133,36 @@ Safety order:
 - Standalone CLI and PowerShell automation (`scripts/forecasting/`) operating completely offline without mutating Kubernetes
 - Documented methodology and experimental evidence in [`docs/FORECASTING.md`](docs/FORECASTING.md)
 
-### Phase 8B: Predictive Controllers & Comparative Experiments (Planned)
-- Predictive autoscaling controller and guarded controller implementation (confidence check, burst override, drift handling, cooldown, fallback)
+### Phase 8B: Forecasting Audit, Robustness Analysis, and Final Model Selection (Implemented & Validated)
+- Clean-room audit engine ([`forecasting/audit.py`](file:///forecasting/audit.py)) verifying input immutability, split monotonicity, origin integrity, and 6 behavioral leakage traps
+- Independent metric recomputation (MAE, RMSE, sMAPE, bias) matching Phase 8A within $1 \times 10^{-4}$ tolerance
+- 100% deterministic reproducibility under new audit ID with zero deviation in predictions, rankings, or exclusions
+- Scenario robustness analysis across all 5 traffic profiles: Persistence retained for Horizons 1 and 2; Linear Trend ($w=8$) selected for Horizon 4 with documented weaknesses and mandatory persistence fallback
+- Frozen model configuration in [`forecasting/config/final_forecaster.yaml`](file:///forecasting/config/final_forecaster.yaml) with status `offline_selected`
+- Pure in-process service wrapper ([`forecasting/service.py`](file:///forecasting/service.py)) and typed runtime contracts (`ForecastInput`, `ForecastOutput`) with zero Kubernetes dependencies
+- Documented audit findings, robustness tables, and engineering rationale in [`docs/FORECAST_SELECTION.md`](file:///docs/FORECAST_SELECTION.md)
+
+### Phase 9A: Live Telemetry Reader and Observe-Only Controller (Implemented & Validated)
+- Typed observe-only configuration model ([`controller/config.py`](file:///controller/config.py)) enforcing mode `observe`, localhost Prometheus endpoint, and fixed PromQL query
+- Live Prometheus telemetry reader ([`controller/telemetry.py`](file:///controller/telemetry.py)) with freshness verification and chronological validation
+- Frozen `ForecastingService` integration generating point forecasts at default Horizon 1 (15.0s)
+- Pending forecast store ([`controller/forecast_store.py`](file:///controller/forecast_store.py)) with delayed actual-outcome matching and residual calculation
+- Controller operational metrics ([`controller/metrics.py`](file:///controller/metrics.py)) exposed on isolated Prometheus endpoint (`http://127.0.0.1:9101/metrics`)
+- Static write-capability auditor ([`controller/audit.py`](file:///controller/audit.py)) verifying zero Kubernetes client imports or write calls
+- Automated PowerShell runner and inspection scripts (`scripts/controller/`) with guaranteed port-forward cleanup
+- Complete design reference documented in [`docs/OBSERVE_ONLY_CONTROLLER.md`](file:///docs/OBSERVE_ONLY_CONTROLLER.md)
+
+### Phase 9B: Replica Calculation, Safety Guard, and Predictive Controller (Planned)
+- Replica calculation engine mapping predicted request rates to target pod counts
+- Safety guard and rate limiter implementing confidence validation, burst overrides, cooldown periods, and reactive fallback
+- Dry-run scaling recommendation generation and structured reasoning logs
+- Controlled execution and validation of scaling recommendations
+
+### Phase 10: Comparative Live Experiments (Planned)
 - Controlled execution of the 5 scenario profiles across all 4 configurations (`fixed`, `hpa`, `predictive`, `guarded`)
 - Empirical performance comparison across latency, throughput, resource efficiency, and SLO compliance
 - Statistical analysis of recorded telemetry and publication of benchmark evidence
+
 
 
 

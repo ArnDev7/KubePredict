@@ -567,7 +567,7 @@ def main() -> int:
     """CLI main entry point."""
     parser = argparse.ArgumentParser(
         prog="python -m forecasting.cli",
-        description="KubePredict Phase 8A Offline Forecasting CLI",
+        description="KubePredict Offline Forecasting CLI (Phase 8A/8B)",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -618,6 +618,35 @@ def main() -> int:
         help="Path to evaluation directory in data/processed/forecasting/<eval_id>",
     )
 
+    # audit subcommand (Phase 8B)
+    audit_p = subparsers.add_parser(
+        "audit", help="Run Phase 8B independent forecasting audit and final model selection"
+    )
+    audit_p.add_argument(
+        "--evaluation-dir",
+        type=Path,
+        required=True,
+        help="Path to Phase 8A evaluation directory to audit",
+    )
+    audit_p.add_argument(
+        "--config",
+        type=Path,
+        default=Path("experiments/configs/forecasting.yaml"),
+        help="Path to forecasting configuration YAML",
+    )
+    audit_p.add_argument(
+        "--dataset-root",
+        type=Path,
+        default=Path("data/raw/scenarios"),
+        help="Path to Phase 7B datasets root",
+    )
+    audit_p.add_argument(
+        "--output-root",
+        type=Path,
+        default=Path("results/summaries/forecasting-audit"),
+        help="Root directory for audit output (unique audit ID subdirectory is created)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "validate":
@@ -626,9 +655,76 @@ def main() -> int:
         return evaluate_mode(args.config, args.dataset_root, args.output_root)
     elif args.command == "inspect":
         return inspect_mode(args.evaluation_dir)
+    elif args.command == "audit":
+        return audit_mode(args.evaluation_dir, args.config, args.dataset_root, args.output_root)
     else:
         parser.print_help()
         return 1
+
+
+def audit_mode(
+    evaluation_dir: Path,
+    config_path: Path,
+    dataset_root: Path,
+    output_root: Path,
+) -> int:
+    """Execute Phase 8B independent forecasting audit against Phase 8A evaluation."""
+    from forecasting.audit import execute_audit_suite
+
+    eval_dir = Path(evaluation_dir)
+    if not eval_dir.exists():
+        print(f"ERROR: Phase 8A evaluation directory does not exist: {eval_dir}", file=sys.stderr)
+        return 1
+
+    print("=" * 70)
+    print("PHASE 8B FORECASTING AUDIT")
+    print("=" * 70)
+    print(f"Phase 8A directory: {eval_dir}")
+    print(f"Configuration: {config_path}")
+    print(f"Dataset root: {dataset_root}")
+    print(f"Output root: {output_root}")
+
+    try:
+        result = execute_audit_suite(
+            phase8a_dir=eval_dir,
+            config_path=config_path,
+            dataset_root=dataset_root,
+            output_root=output_root,
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"\nAUDIT FAILED: {e}", file=sys.stderr)
+        import traceback
+
+        traceback.print_exc()
+        return 1
+
+    meta = result["metadata"]
+    print(f"\nAudit ID: {result['audit_id']}")
+    print(f"Audit Directory: {result['audit_dir']}")
+    print(f"Overall Status: {meta['overall_status']}")
+    print(f"  Immutability: {'PASS' if meta['immutability_audit_passed'] else 'FAIL'}")
+    print(f"  Splits: {'PASS' if meta['split_audit_passed'] else 'FAIL'}")
+    print(f"  Origins: {'PASS' if meta['origin_audit_passed'] else 'FAIL'}")
+    print(f"  Leakage Traps: {'PASS' if meta['leakage_traps_passed'] else 'FAIL'}")
+    print(f"  Metrics: {'PASS' if meta['metric_verification_passed'] else 'FAIL'}")
+    print(f"  Aggregations: {'PASS' if meta['aggregation_audit_passed'] else 'FAIL'}")
+    print(f"  Reproducibility: {'PASS' if meta['reproducibility_audit_passed'] else 'FAIL'}")
+
+    sel = result["final_selection"]
+    default_h = sel.get("default_controller_horizon", {})
+    print(
+        f"\nDefault Controller Horizon: {default_h.get('horizon_steps')} steps "
+        f"({default_h.get('horizon_seconds')}s) - {default_h.get('model_family')}"
+    )
+
+    for ps in sel.get("per_horizon_selection", []):
+        print(
+            f"  H={ps['horizon_steps']} ({ps['horizon_seconds']}s): "
+            f"{ps['selected_model']} {ps.get('parameters', {})} "
+            f"MAE={ps['validation_macro_mae']:.4f} [{ps['status']}]"
+        )
+
+    return 0
 
 
 if __name__ == "__main__":
