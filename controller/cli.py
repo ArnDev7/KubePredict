@@ -8,14 +8,13 @@ import logging
 import signal
 import sys
 import time
-from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from controller.audit import run_write_capability_audit
 from controller.config import ObserverConfig
-from controller.forecast_store import ForecastStore, PendingForecast
+from controller.forecast_store import ForecastStore
 from controller.metrics import MetricsServer, ObserverMetrics
 from controller.observer import ObserverCycleResult, execute_observer_cycle
 from controller.telemetry import LiveTelemetryReader
@@ -77,7 +76,7 @@ def validate_mode(config_path: str, frozen_forecaster_path: str) -> int:
         print(f"     History Window: {cfg.history_window_seconds}s")
         print(f"     Horizon:        {cfg.forecast_horizon_steps} step(s)")
         print(f"     Max Cycles:     {cfg.maximum_cycles}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors.append(f"ObserverConfig validation failed: {e}")
         print(f"[FAIL] ObserverConfig: {e}", file=sys.stderr)
 
@@ -89,9 +88,11 @@ def validate_mode(config_path: str, frozen_forecaster_path: str) -> int:
         try:
             svc = ForecastingService.from_config_file(f_path)
             if svc.status != "offline_selected":
-                errors.append(f"ForecastingService status must be 'offline_selected', got '{svc.status}'")
+                errors.append(
+                    f"ForecastingService status must be 'offline_selected', got '{svc.status}'"
+                )
             print(f"[OK] Frozen forecaster valid: model={svc.model_name} status={svc.status}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"ForecastingService loading failed: {e}")
             print(f"[FAIL] Frozen forecaster: {e}", file=sys.stderr)
 
@@ -101,9 +102,13 @@ def validate_mode(config_path: str, frozen_forecaster_path: str) -> int:
         errors.append(f"Static write audit found {len(report.violations)} violations")
         print(f"[FAIL] Static write audit: {len(report.violations)} violation(s)", file=sys.stderr)
         for v in report.violations:
-            print(f"       {v.file_path}:{v.line_number} [{v.rule}] {v.explanation}", file=sys.stderr)
+            print(
+                f"       {v.file_path}:{v.line_number} [{v.rule}] {v.explanation}", file=sys.stderr
+            )
     else:
-        print(f"[OK] Static write audit passed ({len(report.files_scanned)} files scanned, 0 write calls)")
+        print(
+            f"[OK] Static write audit passed ({len(report.files_scanned)} files scanned, 0 write calls)"
+        )
 
     if errors:
         print("\nVALIDATION FAILED with errors:")
@@ -126,7 +131,9 @@ def audit_source_mode() -> int:
         print(f"  - {f}")
 
     if not report.passed:
-        print(f"\n[FAIL] Found {len(report.violations)} write-capability violations:", file=sys.stderr)
+        print(
+            f"\n[FAIL] Found {len(report.violations)} write-capability violations:", file=sys.stderr
+        )
         for v in report.violations:
             print(f"  {v.file_path}:{v.line_number} [{v.rule}] {v.explanation}", file=sys.stderr)
             if v.code_snippet:
@@ -177,15 +184,23 @@ def observe_mode(
     logger.info("Cycle Interval:  %.1fs", cfg.forecast_interval_seconds)
     logger.info("Max Cycles:      %d", cfg.maximum_cycles)
     logger.info("Frozen Model:    %s", forecasting_service.model_name)
-    logger.info("Default Horizon: %d step(s) (%.1fs)", cfg.forecast_horizon_steps, cfg.forecast_horizon_steps * cfg.sampling_interval_seconds)
+    logger.info(
+        "Default Horizon: %d step(s) (%.1fs)",
+        cfg.forecast_horizon_steps,
+        cfg.forecast_horizon_steps * cfg.sampling_interval_seconds,
+    )
 
     # Start Metrics Server
     metrics = ObserverMetrics()
-    metrics_server = MetricsServer(host=cfg.metrics_host, port=cfg.metrics_port, registry=metrics.registry)
+    metrics_server = MetricsServer(
+        host=cfg.metrics_host, port=cfg.metrics_port, registry=metrics.registry
+    )
     try:
         metrics_server.start()
-    except Exception as e:
-        logger.error("Failed to start metrics server on %s:%d: %s", cfg.metrics_host, cfg.metrics_port, e)
+    except Exception as e:  # noqa: BLE001
+        logger.error(
+            "Failed to start metrics server on %s:%d: %s", cfg.metrics_host, cfg.metrics_port, e
+        )
         return 1
 
     telemetry_reader = LiveTelemetryReader(cfg)
@@ -224,8 +239,8 @@ def observe_mode(
             if cycle_num < cfg.maximum_cycles and not interrupted:
                 time.sleep(cfg.forecast_interval_seconds)
 
-    except Exception as e:
-        logger.exception("Observer cycle execution failed: %s", e)
+    except Exception:
+        logger.exception("Observer cycle execution failed")
         run_status = "failed"
     finally:
         completed_at = datetime.now(UTC)
@@ -378,12 +393,18 @@ def _write_run_artifacts(
         "zero_replica_recommendations": True,
         "residual_count": len(matched_forecasts),
         "mean_absolute_error": (
-            round(sum(m.absolute_error for m in matched_forecasts if m.absolute_error is not None) / len(matched_forecasts), 4)
+            round(
+                sum(m.absolute_error for m in matched_forecasts if m.absolute_error is not None)
+                / len(matched_forecasts),
+                4,
+            )
             if matched_forecasts
             else None
         ),
     }
-    (run_dir / "validation_report.json").write_text(json.dumps(val_report, indent=2), encoding="utf-8")
+    (run_dir / "validation_report.json").write_text(
+        json.dumps(val_report, indent=2), encoding="utf-8"
+    )
 
 
 def main() -> int:
@@ -395,20 +416,40 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # validate subcommand
-    p_val = subparsers.add_parser("validate", help="Validate controller configuration and frozen model")
-    p_val.add_argument("--config", default="config/observer.yaml", help="Path to controller config YAML")
-    p_val.add_argument("--frozen-forecaster", default="forecasting/config/final_forecaster.yaml", help="Path to frozen forecaster YAML")
+    p_val = subparsers.add_parser(
+        "validate", help="Validate controller configuration and frozen model"
+    )
+    p_val.add_argument(
+        "--config", default="config/observer.yaml", help="Path to controller config YAML"
+    )
+    p_val.add_argument(
+        "--frozen-forecaster",
+        default="forecasting/config/final_forecaster.yaml",
+        help="Path to frozen forecaster YAML",
+    )
 
     # observe subcommand
     p_obs = subparsers.add_parser("observe", help="Run bounded observe-only controller loop")
-    p_obs.add_argument("--config", default="config/observer.yaml", help="Path to controller config YAML")
-    p_obs.add_argument("--frozen-forecaster", default="forecasting/config/final_forecaster.yaml", help="Path to frozen forecaster YAML")
-    p_obs.add_argument("--output-root", default="experiments/output/controller-observe", help="Output root directory")
+    p_obs.add_argument(
+        "--config", default="config/observer.yaml", help="Path to controller config YAML"
+    )
+    p_obs.add_argument(
+        "--frozen-forecaster",
+        default="forecasting/config/final_forecaster.yaml",
+        help="Path to frozen forecaster YAML",
+    )
+    p_obs.add_argument(
+        "--output-root",
+        default="experiments/output/controller-observe",
+        help="Output root directory",
+    )
     p_obs.add_argument("--run-id", default=None, help="Explicit run identifier")
     p_obs.add_argument("--max-cycles", type=int, default=None, help="Override maximum cycle count")
 
     # audit-source subcommand
-    subparsers.add_parser("audit-source", help="Execute static write-capability audit on controller code")
+    subparsers.add_parser(
+        "audit-source", help="Execute static write-capability audit on controller code"
+    )
 
     args = parser.parse_args()
 

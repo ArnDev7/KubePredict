@@ -100,9 +100,15 @@ metrics_port: 9299
                 else:
                     # Fresh observations advancing chronologically
                     history_points = 5
-                    ts_list = [c_time - timedelta(seconds=(history_points - 1 - i) * 15) for i in range(history_points)]
+                    ts_list = [
+                        c_time - timedelta(seconds=(history_points - 1 - i) * 15)
+                        for i in range(history_points)
+                    ]
                     val_list = [20.0 + float(c_idx * 2 + i) for i in range(history_points)]
-                    samples = [MetricSample(timestamp=t, value=v) for t, v in zip(ts_list, val_list, strict=True)]
+                    samples = [
+                        MetricSample(timestamp=t, value=v)
+                        for t, v in zip(ts_list, val_list, strict=True)
+                    ]
                     mock_client.query_range.return_value = RangeQueryResult(
                         field_name="request_rate_per_second",
                         query=cfg.query,
@@ -158,7 +164,9 @@ metrics_port: 9299
         assert meta["status"] == "completed"
         assert meta["cycles_executed"] == 4
         assert meta["forecasts_created"] >= 2
-        assert meta["forecasts_matched"] >= 1  # At least cycle 1 forecast should be matched by cycle 2!
+        assert (
+            meta["forecasts_matched"] >= 1
+        )  # At least cycle 1 forecast should be matched by cycle 2!
 
         # Check matched residuals CSV
         with (run_dir / "matched_residuals.csv").open("r", encoding="utf-8") as f:

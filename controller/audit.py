@@ -64,7 +64,7 @@ class _WriteCallVisitor(ast.NodeVisitor):
         self.source_lines = source_lines
         self.violations: list[AuditViolation] = []
 
-    def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
+    def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             base_mod = alias.name.split(".")[0]
             if alias.name in FORBIDDEN_PYTHON_IMPORTS or base_mod == "kubernetes":
@@ -75,7 +75,7 @@ class _WriteCallVisitor(ast.NodeVisitor):
                 )
         self.generic_visit(node)
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module:
             base_mod = node.module.split(".")[0]
             if node.module in FORBIDDEN_PYTHON_IMPORTS or base_mod == "kubernetes":
@@ -86,7 +86,7 @@ class _WriteCallVisitor(ast.NodeVisitor):
                 )
         self.generic_visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+    def visit_Call(self, node: ast.Call) -> None:
         # Check call method name
         func_name = ""
         if isinstance(node.func, ast.Attribute):
@@ -111,7 +111,9 @@ class _WriteCallVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def _record_violation(self, lineno: int, rule: str, explanation: str) -> None:
-        snippet = self.source_lines[lineno - 1].strip() if 0 < lineno <= len(self.source_lines) else ""
+        snippet = (
+            self.source_lines[lineno - 1].strip() if 0 < lineno <= len(self.source_lines) else ""
+        )
         self.violations.append(
             AuditViolation(
                 file_path=self.file_path,
@@ -155,10 +157,19 @@ def audit_powershell_file(path: Path) -> list[AuditViolation]:
     lines = text.splitlines()
     violations: list[AuditViolation] = []
 
+    in_block_comment = False
+
     for i, line in enumerate(lines, start=1):
         stripped = line.strip()
-        # Ignore comment lines
-        if stripped.startswith("#") or stripped.startswith("<#"):
+        if in_block_comment:
+            if "#>" in stripped:
+                in_block_comment = False
+            continue
+        if "<#" in stripped:
+            if "#>" not in stripped:
+                in_block_comment = True
+            continue
+        if stripped.startswith("#"):
             continue
         for pattern in FORBIDDEN_KUBECTL_VERBS:
             match = pattern.search(line)

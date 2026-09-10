@@ -1,32 +1,64 @@
+# Python
 .venv/
-.env
+venv/
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
-.coverage
-htmlcov/
 .mypy_cache/
 .ruff_cache/
-.vscode/
-.idea/
-*.kubeconfig
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
 *.pem
 *.key
-*.crt
-*secret*.yaml
-*credentials*.yaml
+*.p12
+*.pfx
+kubeconfig
+kubeconfig.*
+*secret*.generated.yaml
+grafana-admin*.yaml
 
-# Ignore generated content while preserving the directory
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Runtime logs
+*.log
+logs/
+tmp/
+temp/
+
+# Generated experiment output
+experiments/output/*
+!experiments/output/.gitkeep
+
+# Generated raw and processed data
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
-experiments/output/*
-!experiments/output/.gitkeep
+
+# Generated results
 results/raw/*
 !results/raw/.gitkeep
 results/figures/*
 !results/figures/.gitkeep
 results/summaries/*
 !results/summaries/.gitkeep
+
+# Document-generation artifacts
+*.tmp
+~$*.docx
+*_montage.png

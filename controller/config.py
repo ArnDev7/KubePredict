@@ -1,7 +1,7 @@
 """Typed configuration model for observe-only controller (Phase 9A)."""
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 from urllib.parse import urlparse
 
 import yaml
@@ -14,7 +14,8 @@ LOCALHOST_HOSTNAMES: set[str] = {"127.0.0.1", "localhost", "::1"}
 class ObserverConfig(BaseModel):
     """Configuration for KubePredict observe-only forecasting controller."""
 
-    mode: Literal["observe"] = "observe"
+    schema_version: str = "1.0.0"
+    mode: str = "observe"
     prometheus_url: str = "http://127.0.0.1:9090"
     query: str = FIXED_PROMETHEUS_QUERY
     sampling_interval_seconds: float = Field(default=15.0, gt=0.0)
@@ -33,6 +34,13 @@ class ObserverConfig(BaseModel):
     metrics_port: int = Field(default=9101, ge=1024, le=65535)
 
     model_config = {"extra": "forbid"}
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        if v != "observe":
+            raise ValueError(f"controller mode must be strictly 'observe', got '{v}'")
+        return v
 
     @field_validator(
         "sampling_interval_seconds",
@@ -62,9 +70,7 @@ class ObserverConfig(BaseModel):
         parsed = urlparse(trimmed)
         hostname = (parsed.hostname or "").lower()
         if hostname not in LOCALHOST_HOSTNAMES:
-            raise ValueError(
-                f"prometheus_url must target localhost for Phase 9A; got '{hostname}'"
-            )
+            raise ValueError(f"prometheus_url must target localhost for Phase 9A; got '{hostname}'")
         return trimmed
 
     @field_validator("query")
@@ -112,7 +118,6 @@ class ObserverConfig(BaseModel):
                 if isinstance(e, ValueError):
                     raise
                 # File reading error or unparseable YAML
-                pass
 
         return self
 

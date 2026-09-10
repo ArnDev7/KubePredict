@@ -27,4 +27,4 @@ docker run -d `
     -e LOG_LEVEL="INFO" `
     -e CONTROLLER_MODE="observe" `
     -e ENABLE_LIVE_SCALING="false" `
-    adaptive-predictive-k8s-autoscaler:0.1.0
+    kubepredict-workload-api:0.1.0

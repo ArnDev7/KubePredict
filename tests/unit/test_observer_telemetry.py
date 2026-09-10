@@ -20,7 +20,9 @@ def _make_sample_series(
     timestamps: list[datetime],
     values: list[float],
 ) -> RangeQueryResult:
-    samples = [MetricSample(timestamp=ts, value=val) for ts, val in zip(timestamps, values, strict=True)]
+    samples = [
+        MetricSample(timestamp=ts, value=val) for ts, val in zip(timestamps, values, strict=True)
+    ]
     series = MetricSeries(labels={"job": "kubepredict-workload"}, samples=samples)
     return RangeQueryResult(
         field_name="request_rate_per_second",

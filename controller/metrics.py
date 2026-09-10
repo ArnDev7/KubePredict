@@ -133,7 +133,7 @@ class _MetricsHandler(BaseHTTPRequestHandler):
 
     registry: CollectorRegistry
 
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         if self.path in ("/metrics", "/metrics/"):
             output = generate_latest(self.registry)
             self.send_response(200)

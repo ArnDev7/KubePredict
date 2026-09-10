@@ -121,7 +121,7 @@ class LiveTelemetryReader:
                 end_time=curr_utc,
                 step=step_str,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             q_end = datetime.now(UTC)
             logger.warning("Prometheus telemetry query failed: %s", exc)
             return TelemetryResult(
@@ -211,7 +211,7 @@ class LiveTelemetryReader:
         for i in range(1, len(timestamps)):
             delta_s = (timestamps[i] - timestamps[i - 1]).total_seconds()
             if delta_s > interval * 1.5:
-                missed = max(0, int(round(delta_s / interval)) - 1)
+                missed = max(0, round(delta_s / interval) - 1)
                 missing_intervals += missed
 
         latest_age_s = max(0.0, (curr_utc - timestamps[-1]).total_seconds())
