@@ -1,0 +1,91 @@
+﻿=== Phase 5C HPA Events & Conditions ===
+Timestamp: 2026-09-06T11:01:13.1459664+05:30
+
+--- kubectl describe hpa ---
+Name:                                                  kubepredict-workload-api
+Namespace:                                             kubepredict-system
+Labels:                                                app.kubernetes.io/component=autoscaling-baseline
+                                                       app.kubernetes.io/managed-by=kustomize
+                                                       app.kubernetes.io/name=kubepredict
+                                                       app.kubernetes.io/part-of=kubepredict
+                                                       app.kubernetes.io/version=0.1.0
+Annotations:                                           <none>
+CreationTimestamp:                                     Sun, 06 Sep 2026 10:51:36 +0530
+Reference:                                             Deployment/kubepredict-workload-api
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  2% (2m) / 60%
+Min replicas:                                          1
+Max replicas:                                          6
+Behavior:
+  Scale Up:
+    Stabilization Window: 0 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Pods     Value: 2    Period: 60 seconds
+      - Type: Percent  Value: 100  Period: 60 seconds
+  Scale Down:
+    Stabilization Window: 300 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Pods     Value: 1   Period: 60 seconds
+      - Type: Percent  Value: 50  Period: 60 seconds
+Deployment pods:       3 current / 2 desired
+Conditions:
+  Type            Status  Reason            Message
+  ----            ------  ------            -------
+  AbleToScale     True    SucceededRescale  the HPA controller was able to update the target scale to 2
+  ScalingActive   True    ValidMetricFound  the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  True    ScaleDownLimit    the desired replica count is decreasing faster than the maximum scale rate
+  ScaledToZero    False   NotScaledToZero   the HPA controller did not scale the workload to zero
+Events:
+  Type    Reason             Age    From                       Message
+  ----    ------             ----   ----                       -------
+  Normal  SuccessfulRescale  7m36s  horizontal-pod-autoscaler  New size: 4; reason: cpu resource utilization (percentage of request) above target
+  Normal  SuccessfulRescale  6m36s  horizontal-pod-autoscaler  New size: 6; reason: cpu resource utilization (percentage of request) above target
+  Normal  SuccessfulRescale  66s    horizontal-pod-autoscaler  New size: 4; reason: All metrics below target
+  Normal  SuccessfulRescale  51s    horizontal-pod-autoscaler  New size: 3; reason: All metrics below target
+  Normal  SuccessfulRescale  6s     horizontal-pod-autoscaler  New size: 2; reason: All metrics below target
+
+--- kubectl get events (kubepredict-system) ---
+LAST SEEN   TYPE      REASON              OBJECT                                             MESSAGE
+7m36s       Normal    SuccessfulRescale   horizontalpodautoscaler/kubepredict-workload-api   New size: 4; reason: cpu resource utilization (percentage of request) above target
+7m36s       Normal    ScalingReplicaSet   deployment/kubepredict-workload-api                Scaled up replica set kubepredict-workload-api-7649cd9b6 from 2 to 4
+7m36s       Normal    SuccessfulCreate    replicaset/kubepredict-workload-api-7649cd9b6      Created pod: kubepredict-workload-api-7649cd9b6-jlrq4
+7m36s       Normal    SuccessfulCreate    replicaset/kubepredict-workload-api-7649cd9b6      Created pod: kubepredict-workload-api-7649cd9b6-cfzlx
+7m36s       Normal    Scheduled           pod/kubepredict-workload-api-7649cd9b6-jlrq4       Successfully assigned kubepredict-system/kubepredict-workload-api-7649cd9b6-jlrq4 to kubepredict-dev-control-plane
+7m36s       Normal    Scheduled           pod/kubepredict-workload-api-7649cd9b6-cfzlx       Successfully assigned kubepredict-system/kubepredict-workload-api-7649cd9b6-cfzlx to kubepredict-dev-control-plane
+7m35s       Normal    Created             pod/kubepredict-workload-api-7649cd9b6-cfzlx       Container created
+7m35s       Normal    Created             pod/kubepredict-workload-api-7649cd9b6-jlrq4       Container created
+7m35s       Normal    Pulled              pod/kubepredict-workload-api-7649cd9b6-jlrq4       Container image "kubepredict-workload-api:0.1.0" already present on machine and can be accessed by the pod
+7m35s       Normal    Started             pod/kubepredict-workload-api-7649cd9b6-jlrq4       Container started
+7m35s       Normal    Started             pod/kubepredict-workload-api-7649cd9b6-cfzlx       Container started
+7m35s       Normal    Pulled              pod/kubepredict-workload-api-7649cd9b6-cfzlx       Container image "kubepredict-workload-api:0.1.0" already present on machine and can be accessed by the pod
+7m34s       Warning   Unhealthy           pod/kubepredict-workload-api-7649cd9b6-cfzlx       Startup probe failed: Get "http://10.244.0.9:8000/healthz": dial tcp 10.244.0.9:8000: connect: connection refused
+7m34s       Warning   Unhealthy           pod/kubepredict-workload-api-7649cd9b6-jlrq4       Startup probe failed: Get "http://10.244.0.8:8000/healthz": dial tcp 10.244.0.8:8000: connect: connection refused
+6m36s       Normal    Scheduled           pod/kubepredict-workload-api-7649cd9b6-b44m2       Successfully assigned kubepredict-system/kubepredict-workload-api-7649cd9b6-b44m2 to kubepredict-dev-control-plane
+6m36s       Normal    SuccessfulRescale   horizontalpodautoscaler/kubepredict-workload-api   New size: 6; reason: cpu resource utilization (percentage of request) above target
+6m36s       Normal    Created             pod/kubepredict-workload-api-7649cd9b6-b44m2       Container created
+6m36s       Normal    Pulled              pod/kubepredict-workload-api-7649cd9b6-b44m2       Container image "kubepredict-workload-api:0.1.0" already present on machine and can be accessed by the pod
+6m36s       Normal    Pulled              pod/kubepredict-workload-api-7649cd9b6-6whfr       Container image "kubepredict-workload-api:0.1.0" already present on machine and can be accessed by the pod
+6m36s       Normal    ScalingReplicaSet   deployment/kubepredict-workload-api                Scaled up replica set kubepredict-workload-api-7649cd9b6 from 4 to 6
+6m36s       Normal    SuccessfulCreate    replicaset/kubepredict-workload-api-7649cd9b6      Created pod: kubepredict-workload-api-7649cd9b6-6whfr
+6m36s       Normal    Created             pod/kubepredict-workload-api-7649cd9b6-6whfr       Container created
+6m36s       Normal    Scheduled           pod/kubepredict-workload-api-7649cd9b6-6whfr       Successfully assigned kubepredict-system/kubepredict-workload-api-7649cd9b6-6whfr to kubepredict-dev-control-plane
+6m36s       Normal    Started             pod/kubepredict-workload-api-7649cd9b6-6whfr       Container started
+6m36s       Normal    SuccessfulCreate    replicaset/kubepredict-workload-api-7649cd9b6      Created pod: kubepredict-workload-api-7649cd9b6-b44m2
+6m36s       Normal    Started             pod/kubepredict-workload-api-7649cd9b6-b44m2       Container started
+66s         Normal    Killing             pod/kubepredict-workload-api-7649cd9b6-b44m2       Stopping container workload-api
+66s         Normal    SuccessfulDelete    replicaset/kubepredict-workload-api-7649cd9b6      Deleted pod: kubepredict-workload-api-7649cd9b6-6whfr
+66s         Normal    ScalingReplicaSet   deployment/kubepredict-workload-api                Scaled down replica set kubepredict-workload-api-7649cd9b6 from 6 to 4
+66s         Normal    SuccessfulRescale   horizontalpodautoscaler/kubepredict-workload-api   New size: 4; reason: All metrics below target
+66s         Normal    Killing             pod/kubepredict-workload-api-7649cd9b6-6whfr       Stopping container workload-api
+66s         Normal    SuccessfulDelete    replicaset/kubepredict-workload-api-7649cd9b6      Deleted pod: kubepredict-workload-api-7649cd9b6-b44m2
+51s         Normal    SuccessfulRescale   horizontalpodautoscaler/kubepredict-workload-api   New size: 3; reason: All metrics below target
+51s         Normal    SuccessfulDelete    replicaset/kubepredict-workload-api-7649cd9b6      Deleted pod: kubepredict-workload-api-7649cd9b6-cfzlx
+51s         Normal    Killing             pod/kubepredict-workload-api-7649cd9b6-cfzlx       Stopping container workload-api
+51s         Normal    ScalingReplicaSet   deployment/kubepredict-workload-api                Scaled down replica set kubepredict-workload-api-7649cd9b6 from 4 to 3
+6s          Normal    SuccessfulDelete    replicaset/kubepredict-workload-api-7649cd9b6      Deleted pod: kubepredict-workload-api-7649cd9b6-jlrq4
+6s          Normal    Killing             pod/kubepredict-workload-api-7649cd9b6-jlrq4       Stopping container workload-api
+6s          Normal    SuccessfulRescale   horizontalpodautoscaler/kubepredict-workload-api   New size: 2; reason: All metrics below target
+6s          Normal    ScalingReplicaSet   deployment/kubepredict-workload-api                Scaled down replica set kubepredict-workload-api-7649cd9b6 from 3 to 2
+

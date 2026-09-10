@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubepredict-monitoring
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/version: "0.1.0"

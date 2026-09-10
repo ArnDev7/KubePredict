@@ -1,0 +1,29 @@
+{
+  "validation_id": "phase-5c-val-20260906-105130",
+  "started_timestamp": "2026-09-06T10:51:30+05:30",
+  "cluster_name": "kubepredict-dev",
+  "context": "kind-kubepredict-dev",
+  "namespace": "kubepredict-system",
+  "deployment": "kubepredict-workload-api",
+  "service": "kubepredict-workload-api",
+  "hpa": "kubepredict-workload-api",
+  "image": "kubepredict-workload-api:0.1.0",
+  "initial_replicas": 2,
+  "hpa_minimum_replicas": 1,
+  "hpa_maximum_replicas": 6,
+  "cpu_target_percentage": 60,
+  "cpu_request_per_pod": "100m",
+  "cpu_limit_per_pod": "500m",
+  "request_endpoint": "/work",
+  "intended_maximum_validation_duration_seconds": 180,
+  "planned_request_parameters": {
+    "duration_seconds": 120,
+    "concurrency": 8,
+    "cpu_iterations": 300000,
+    "delay_ms": 0,
+    "payload_size": 0
+  },
+  "git_commit": null,
+  "working_tree_dirty": true,
+  "statement": "Functional HPA validation, not comparative performance experiment"
+}

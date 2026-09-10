@@ -1,0 +1,15 @@
+project:
+  name: adaptive-predictive-k8s-autoscaler
+cluster:
+  provider: undecided
+  namespace: apa-system
+controller:
+  mode: observe
+  live_scaling: false
+  min_replicas: 1
+  max_replicas: 10
+experiments:
+  seed: 42
+  repetitions: 3
+  slo_latency_ms: 500
+  results_generated: false

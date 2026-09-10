@@ -1,0 +1,53 @@
+﻿=== Phase 5C HPA Pre-Demand State ===
+Timestamp: 2026-09-06T10:51:47.5779084+05:30
+
+--- kubectl get hpa ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         2          11s
+
+--- kubectl describe hpa ---
+Name:                                                  kubepredict-workload-api
+Namespace:                                             kubepredict-system
+Labels:                                                app.kubernetes.io/component=autoscaling-baseline
+                                                       app.kubernetes.io/managed-by=kustomize
+                                                       app.kubernetes.io/name=kubepredict
+                                                       app.kubernetes.io/part-of=kubepredict
+                                                       app.kubernetes.io/version=0.1.0
+Annotations:                                           <none>
+CreationTimestamp:                                     Sun, 06 Sep 2026 10:51:36 +0530
+Reference:                                             Deployment/kubepredict-workload-api
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  2% (2m) / 60%
+Min replicas:                                          1
+Max replicas:                                          6
+Behavior:
+  Scale Up:
+    Stabilization Window: 0 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Pods     Value: 2    Period: 60 seconds
+      - Type: Percent  Value: 100  Period: 60 seconds
+  Scale Down:
+    Stabilization Window: 300 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Pods     Value: 1   Period: 60 seconds
+      - Type: Percent  Value: 50  Period: 60 seconds
+Deployment pods:       2 current / 2 desired
+Conditions:
+  Type            Status  Reason               Message
+  ----            ------  ------               -------
+  AbleToScale     True    ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
+  ScalingActive   True    ValidMetricFound     the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  False   DesiredWithinRange   the desired count is within the acceptable range
+Events:           <none>
+
+--- kubectl top pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   3m           46Mi            
+
+--- kubectl get deployment ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   2/2     2            2           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+

@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adaptive-predictive-k8s-autoscaler"
+version = "0.1.0"
+description = "Research scaffold for guarded predictive Kubernetes autoscaling"
+requires-python = ">=3.11,<3.15"
+license = {text = "MIT"}
+authors = [{name = "Arnav Tiwari and team"}]
+dependencies = [
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.23",
+    "prometheus-client>=0.17",
+    "numpy>=1.24",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "pytest-cov>=5,<6",
+    "ruff>=0.6,<1",
+    "mypy>=1.11,<2",
+    "httpx>=0.25",
+    "PyYAML>=6.0",
+    "types-PyYAML>=6.0",
+    "locust>=2.20"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "config", "controller", "forecasting", "shared", "load_testing", "experiments"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -p no:locust"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+ignore = ["TRY004", "DTZ005", "SIM102"]

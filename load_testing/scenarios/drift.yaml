@@ -1,0 +1,26 @@
+scenario_name: drift
+description: "Initial cyclic baseline transitioning structurally into persistent higher demand"
+total_duration_seconds: 240
+host: "http://127.0.0.1:8000"
+endpoint: "/work"
+random_seed: 42
+cpu_iterations: 100000
+delay_ms: 20
+payload_size: 30
+request_timeout_seconds: 10.0
+stages:
+  - duration_seconds: 30
+    target_users: 4
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 45
+    target_users: 6
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 45
+    target_users: 10
+    spawn_rate_per_second: 4.0
+  - duration_seconds: 90
+    target_users: 18
+    spawn_rate_per_second: 4.0
+  - duration_seconds: 30
+    target_users: 0
+    spawn_rate_per_second: 4.0

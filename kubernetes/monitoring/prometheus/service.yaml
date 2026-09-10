@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubepredict-prometheus
+  namespace: kubepredict-monitoring
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/version: "0.1.0"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/component: monitoring
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
+      protocol: TCP

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubepredict-grafana
+  namespace: kubepredict-monitoring
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: monitoring-dashboard
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/version: "0.1.0"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/component: monitoring-dashboard
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      protocol: TCP

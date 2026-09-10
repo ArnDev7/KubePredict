@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubepredict-grafana-datasource
+  namespace: kubepredict-monitoring
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/version: "0.1.0"
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: KubePredict Prometheus
+        type: prometheus
+        access: proxy
+        url: http://kubepredict-prometheus.kubepredict-monitoring.svc.cluster.local:9090
+        isDefault: true
+        editable: false
+        uid: kubepredict-prometheus
+        jsonData:
+          httpMethod: POST

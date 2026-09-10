@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubepredict-workload-api-config
+  namespace: kubepredict-system
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: workload-api
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: kustomize
+data:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "8000"
+  LOG_LEVEL: "INFO"
+  MAX_CPU_ITERATIONS: "500000"
+  MAX_DELAY_MS: "2000"
+  TARGET_NAMESPACE: "kubepredict-system"
+  TARGET_DEPLOYMENT: "kubepredict-workload-api"
+  CONTROLLER_MODE: "observe"
+  ENABLE_LIVE_SCALING: "false"
+  MINIMUM_REPLICAS: "1"
+  MAXIMUM_REPLICAS: "10"
+  MAXIMUM_SCALE_UP_STEP: "3"
+  MAXIMUM_SCALE_DOWN_STEP: "1"
+  COOLDOWN_SECONDS: "60"
+  PROMETHEUS_URL: "http://prometheus-operated.monitoring.svc:9090"
+  TELEMETRY_STALE_AFTER_SECONDS: "30"
+  SLO_LATENCY_MS: "500.0"
+  RANDOM_SEED: "42"

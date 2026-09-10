@@ -1,0 +1,29 @@
+scenario_name: periodic
+description: "Cyclical request pattern featuring two repeated low and high user-demand waves"
+total_duration_seconds: 240
+host: "http://127.0.0.1:8000"
+endpoint: "/work"
+random_seed: 42
+cpu_iterations: 120000
+delay_ms: 15
+payload_size: 40
+request_timeout_seconds: 10.0
+stages:
+  - duration_seconds: 30
+    target_users: 4
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 45
+    target_users: 14
+    spawn_rate_per_second: 4.0
+  - duration_seconds: 45
+    target_users: 6
+    spawn_rate_per_second: 4.0
+  - duration_seconds: 45
+    target_users: 14
+    spawn_rate_per_second: 4.0
+  - duration_seconds: 45
+    target_users: 6
+    spawn_rate_per_second: 4.0
+  - duration_seconds: 30
+    target_users: 0
+    spawn_rate_per_second: 4.0

@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubepredict-prometheus-discovery
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/version: "0.1.0"
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - services
+      - endpoints
+      - pods
+    verbs:
+      - get
+      - list
+      - watch

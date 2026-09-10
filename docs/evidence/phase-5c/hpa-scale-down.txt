@@ -1,0 +1,397 @@
+﻿=== Phase 5C HPA Scale-Down Observation ===
+Demand stop timestamp: 2026-09-06T10:55:08.7216525+05:30
+Max observation end:   2026-09-06T11:02:08.7216525+05:30 (420 seconds total)
+Polling interval:      20 seconds
+
+------------------------------------------------------------
+[Poll 1 | Time: 2026-09-06T10:55:57.102+05:30 | Elapsed since stop: 48s | Remaining: 372s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          4m21s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          80s     10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          80s     10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          2m20s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          2m20s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   3m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 2 | Time: 2026-09-06T10:56:17.746+05:30 | Elapsed since stop: 69s | Remaining: 351s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          4m41s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          101s    10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          101s    10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          2m41s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          2m41s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   3m           45Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   3m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   3m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 3 | Time: 2026-09-06T10:56:38.401+05:30 | Elapsed since stop: 90s | Remaining: 330s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          5m2s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          2m1s    10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          2m1s    10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          3m1s    10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          3m1s    10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   3m           45Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   3m           52Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           53Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 4 | Time: 2026-09-06T10:56:59.002+05:30 | Elapsed since stop: 110s | Remaining: 310s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          5m23s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          2m22s   10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          2m22s   10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          3m22s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          3m22s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           52Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 5 | Time: 2026-09-06T10:57:19.614+05:30 | Elapsed since stop: 131s | Remaining: 289s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          5m43s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          2m42s   10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          2m42s   10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          3m42s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          3m42s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   3m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 6 | Time: 2026-09-06T10:57:40.262+05:30 | Elapsed since stop: 152s | Remaining: 268s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          6m4s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          3m3s    10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          3m3s    10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          4m3s    10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          4m3s    10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   3m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 7 | Time: 2026-09-06T10:58:00.858+05:30 | Elapsed since stop: 172s | Remaining: 248s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          6m24s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          3m24s   10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          3m24s   10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          4m24s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          4m24s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   3m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           52Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 8 | Time: 2026-09-06T10:58:21.512+05:30 | Elapsed since stop: 193s | Remaining: 227s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          6m45s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          3m44s   10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          3m44s   10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          4m44s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          4m44s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   3m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   3m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 9 | Time: 2026-09-06T10:58:42.328+05:30 | Elapsed since stop: 214s | Remaining: 206s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          7m6s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          4m5s    10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          4m5s    10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          5m5s    10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          5m5s    10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   3m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   3m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 10 | Time: 2026-09-06T10:59:02.967+05:30 | Elapsed since stop: 234s | Remaining: 186s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          7m27s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          4m26s   10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          4m26s   10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          5m26s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          5m26s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   3m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   3m           53Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 11 | Time: 2026-09-06T10:59:23.594+05:30 | Elapsed since stop: 255s | Remaining: 165s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          7m47s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          4m47s   10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          4m47s   10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          5m47s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          5m47s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   3m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           52Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 12 | Time: 2026-09-06T10:59:44.501+05:30 | Elapsed since stop: 276s | Remaining: 144s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          8m8s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          5m7s    10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          5m7s    10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          6m7s    10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          6m7s    10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   2m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           52Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           52Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 13 | Time: 2026-09-06T11:00:05.171+05:30 | Elapsed since stop: 296s | Remaining: 124s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         6          8m29s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   6/6     6            6           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-6whfr   1/1     Running   0          5m28s   10.244.0.11   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-b44m2   1/1     Running   0          5m28s   10.244.0.10   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-cfzlx   1/1     Running   0          6m28s   10.244.0.9    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5    kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          6m28s   10.244.0.8    kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-6whfr   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-b44m2   workload-api   3m           45Mi            
+kubepredict-workload-api-7649cd9b6-cfzlx   workload-api   2m           51Mi            
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   3m           46Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           53Mi
+Current HPA Replicas: 6 | Desired HPA Replicas: 6
+------------------------------------------------------------
+[Poll 14 | Time: 2026-09-06T11:00:25.757+05:30 | Elapsed since stop: 317s | Remaining: 103s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         4          8m49s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   3/3     3            3           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP           NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          6m49s   10.244.0.8   kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           47Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           46Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           53Mi
+Current HPA Replicas: 4 | Desired HPA Replicas: 3
+
+>>> SCALE-DOWN EVENT OBSERVED! Desired replicas decreased from 6 to 3 (elapsed: 317s) <<<
+------------------------------------------------------------
+[Poll 15 | Time: 2026-09-06T11:00:46.380+05:30 | Elapsed since stop: 338s | Remaining: 82s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         3          9m10s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   3/3     3            3           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP           NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          7m9s    10.244.0.8   kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           56Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           54Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           53Mi
+Current HPA Replicas: 3 | Desired HPA Replicas: 3
+
+>>> SCALE-DOWN EVENT OBSERVED! Desired replicas decreased from 6 to 3 (elapsed: 338s) <<<
+------------------------------------------------------------
+[Poll 16 | Time: 2026-09-06T11:01:06.959+05:30 | Elapsed since stop: 358s | Remaining: 62s]
+--- HPA Status ---
+NAME                       REFERENCE                             TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+kubepredict-workload-api   Deployment/kubepredict-workload-api   cpu: 2%/60%   1         6         3          9m31s
+--- Deployment Status ---
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS     IMAGES                           SELECTOR
+kubepredict-workload-api   3/3     3            3           2d14h   workload-api   kubepredict-workload-api:0.1.0   app.kubernetes.io/component=workload-api,app.kubernetes.io/name=kubepredict
+--- Pods Status ---
+NAME                                       READY   STATUS    RESTARTS   AGE     IP           NODE                            NOMINATED NODE   READINESS GATES
+kubepredict-workload-api-7649cd9b6-czpjm   1/1     Running   0          2d14h   10.244.0.6   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-fnlpj   1/1     Running   0          2d14h   10.244.0.5   kubepredict-dev-control-plane   <none>           <none>
+kubepredict-workload-api-7649cd9b6-jlrq4   1/1     Running   0          7m30s   10.244.0.8   kubepredict-dev-control-plane   <none>           <none>
+--- Top Pods ---
+POD                                        NAME           CPU(cores)   MEMORY(bytes)   
+kubepredict-workload-api-7649cd9b6-czpjm   workload-api   2m           56Mi            
+kubepredict-workload-api-7649cd9b6-fnlpj   workload-api   2m           54Mi            
+kubepredict-workload-api-7649cd9b6-jlrq4   workload-api   2m           53Mi
+Current HPA Replicas: 3 | Desired HPA Replicas: 3
+
+>>> SCALE-DOWN EVENT OBSERVED! Desired replicas decreased from 6 to 3 (elapsed: 358s) <<<
+Scale down completed and stabilized. Stopping observation early.
+------------------------------------------------------------
+Scale-down observation finished at 2026-09-06T11:01:07.5425793+05:30.
+Scale-down observed: True

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubepredict-prometheus-config
+  namespace: kubepredict-monitoring
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/version: "0.1.0"
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: kubepredict-workload
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - kubepredict-system
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_phase]
+            action: keep
+            regex: Running
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            action: keep
+            regex: kubepredict
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+            action: keep
+            regex: workload-api
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            action: keep
+            regex: http
+          - action: replace
+            target_label: __metrics_path__
+            replacement: /metrics
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: replace
+            target_label: container

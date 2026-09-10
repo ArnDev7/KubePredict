@@ -1,0 +1,26 @@
+scenario_name: ramp
+description: "Gradual step-wise increase in active users to peak load followed by cooldown"
+total_duration_seconds: 240
+host: "http://127.0.0.1:8000"
+endpoint: "/work"
+random_seed: 42
+cpu_iterations: 80000
+delay_ms: 10
+payload_size: 30
+request_timeout_seconds: 10.0
+stages:
+  - duration_seconds: 30
+    target_users: 4
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 60
+    target_users: 8
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 60
+    target_users: 12
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 60
+    target_users: 16
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 30
+    target_users: 0
+    spawn_rate_per_second: 4.0

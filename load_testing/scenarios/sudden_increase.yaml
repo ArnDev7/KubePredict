@@ -1,0 +1,20 @@
+scenario_name: sudden_increase
+description: "Abrupt step increase from low baseline demand to high peak demand with cooldown"
+total_duration_seconds: 180
+host: "http://127.0.0.1:8000"
+endpoint: "/work"
+random_seed: 42
+cpu_iterations: 90000
+delay_ms: 10
+payload_size: 20
+request_timeout_seconds: 10.0
+stages:
+  - duration_seconds: 60
+    target_users: 4
+    spawn_rate_per_second: 2.0
+  - duration_seconds: 90
+    target_users: 18
+    spawn_rate_per_second: 5.0
+  - duration_seconds: 30
+    target_users: 0
+    spawn_rate_per_second: 5.0

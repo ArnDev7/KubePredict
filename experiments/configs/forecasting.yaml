@@ -1,0 +1,47 @@
+# KubePredict Offline Forecasting Configuration (Phase 8A)
+target_column: "request_rate_per_second"
+timestamp_column: "timestamp_utc"
+scenario_column: "scenario_name"
+sampling_interval_seconds: 15.0
+
+# Evaluated short horizons: 1 step (15s), 2 steps (30s), 4 steps (60s)
+forecast_horizon_steps:
+  - 1
+  - 2
+  - 4
+
+# Chronological split policy: 60% train, 20% validation, 20% test
+minimum_training_samples: 6
+validation_fraction: 0.20
+test_fraction: 0.20
+rolling_step_size: 1
+
+# Predefined candidate parameter sets
+moving_average_windows:
+  - 3
+  - 5
+  - 8
+
+ewma_alphas:
+  - 0.2
+  - 0.4
+  - 0.6
+  - 0.8
+
+linear_trend_windows:
+  - 3
+  - 5
+  - 8
+
+# Model selection and baseline comparison
+primary_selection_metric: "mae"
+secondary_selection_metrics:
+  - "rmse"
+  - "smape"
+minimum_required_scenarios: 4
+random_seed: 42
+missing_value_policy: "exclude_origin"
+
+# Output directory trees (strictly git-ignored)
+output_root: "data/processed/forecasting"
+summary_output_root: "results/summaries/forecasting"

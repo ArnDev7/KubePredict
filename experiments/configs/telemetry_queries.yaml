@@ -1,0 +1,112 @@
+# Version-Controlled Prometheus Telemetry Query Specifications
+version: "1.0"
+step: "15s"
+queries:
+  - field_name: "request_rate_per_second"
+    description: "Total HTTP incoming request rate across all workload pods"
+    source: "prometheus"
+    promql: 'sum(rate(apa_http_requests_total{job="kubepredict-workload"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "req/s"
+    required: true
+
+  - field_name: "completed_work_rate_per_second"
+    description: "Rate of successfully completed synthetic work requests"
+    source: "prometheus"
+    promql: 'sum(rate(apa_work_requests_total{job="kubepredict-workload",outcome="completed"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "req/s"
+    required: true
+
+  - field_name: "http_5xx_rate_per_second"
+    description: "Rate of HTTP server error responses (5xx status codes)"
+    source: "prometheus"
+    promql: 'sum(rate(apa_http_requests_total{job="kubepredict-workload",status_code=~"5.."}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "req/s"
+    required: true
+
+  - field_name: "rejected_work_rate_per_second"
+    description: "Rate of work requests rejected due to safety bound violations"
+    source: "prometheus"
+    promql: 'sum(rate(apa_work_requests_total{job="kubepredict-workload",outcome="rejected"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "req/s"
+    required: false
+
+  - field_name: "p95_http_duration_seconds"
+    description: "95th percentile HTTP request duration in seconds"
+    source: "prometheus"
+    promql: 'histogram_quantile(0.95, sum by (le) (rate(apa_http_request_duration_seconds_bucket{job="kubepredict-workload"}[5m])))'
+    expected_result_type: "matrix"
+    aggregation: "histogram_quantile"
+    unit: "seconds"
+    required: true
+
+  - field_name: "average_http_duration_seconds"
+    description: "Average HTTP request duration in seconds over 1-minute rate"
+    source: "prometheus"
+    promql: 'sum(rate(apa_http_request_duration_seconds_sum{job="kubepredict-workload"}[1m])) / sum(rate(apa_http_request_duration_seconds_count{job="kubepredict-workload"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "ratio"
+    unit: "seconds"
+    required: true
+
+  - field_name: "requests_in_progress"
+    description: "Current number of in-flight HTTP requests active across all pods"
+    source: "prometheus"
+    promql: 'sum(apa_http_requests_in_progress{job="kubepredict-workload"})'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "requests"
+    required: true
+
+  - field_name: "cpu_iterations_rate_per_second"
+    description: "Rate of synthetic CPU hashing iterations completed per second"
+    source: "prometheus"
+    promql: 'sum(rate(apa_cpu_iterations_total{job="kubepredict-workload"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "iterations/s"
+    required: true
+
+  - field_name: "configured_delay_rate_seconds_per_second"
+    description: "Rate of artificial sleep delay applied in seconds per second"
+    source: "prometheus"
+    promql: 'sum(rate(apa_artificial_delay_seconds_total{job="kubepredict-workload"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "seconds/s"
+    required: true
+
+  - field_name: "prometheus_targets_up"
+    description: "Count of workload scrape targets reporting healthy up status"
+    source: "prometheus"
+    promql: 'sum(up{job="kubepredict-workload"})'
+    expected_result_type: "matrix"
+    aggregation: "sum"
+    unit: "targets"
+    required: true
+
+pod_queries:
+  - field_name: "pod_http_request_rate_per_second"
+    description: "Per-pod HTTP request rate"
+    source: "prometheus"
+    promql: 'sum by (pod) (rate(apa_http_requests_total{job="kubepredict-workload"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum by pod"
+    unit: "req/s"
+    required: true
+
+  - field_name: "pod_work_request_rate_per_second"
+    description: "Per-pod completed work request rate"
+    source: "prometheus"
+    promql: 'sum by (pod) (rate(apa_work_requests_total{job="kubepredict-workload",outcome="completed"}[1m]))'
+    expected_result_type: "matrix"
+    aggregation: "sum by pod"
+    unit: "req/s"
+    required: true

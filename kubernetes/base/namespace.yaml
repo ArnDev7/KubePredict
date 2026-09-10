@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubepredict-system
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: workload-api
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: kustomize

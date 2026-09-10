@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubepredict-grafana-dashboard-provider
+  namespace: kubepredict-monitoring
+  labels:
+    app.kubernetes.io/name: kubepredict
+    app.kubernetes.io/part-of: kubepredict
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/version: "0.1.0"
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: KubePredict
+        orgId: 1
+        folder: KubePredict
+        type: file
+        disableDeletion: true
+        editable: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: false
+        options:
+          path: /var/lib/grafana/dashboards/kubepredict
