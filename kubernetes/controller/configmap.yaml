@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubepredict-controller-config
+  namespace: kubepredict-system
+  labels:
+    app.kubernetes.io/name: kubepredict-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: kubepredict
+data:
+  CONTROLLER_MODE: "dry_run"
+  ENABLE_LIVE_SCALING: "false"
+  PROMETHEUS_URL: "http://kubepredict-prometheus.kubepredict-monitoring.svc.cluster.local:9090"

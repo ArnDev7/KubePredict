@@ -1,0 +1,36 @@
+# KubePredict Forecast Trust Guard Configuration (Phase 10A)
+# Evaluates whether the current point forecast is eligible to influence autoscaling.
+# Status: provisional_validated — NOT production_ready.
+
+schema_version: "1.0.0"
+status: "provisional_validated"
+enabled: true
+
+# Time window (in seconds) for considering matched forecast residuals
+evidence_window_seconds: 180.0
+
+# Minimum number of matched residuals required within the evidence window
+minimum_matched_residuals: 3
+
+# Maximum allowable age (seconds) of the most recent matched residual
+residual_max_age_seconds: 120.0
+
+# Maximum allowable mean absolute error (MAE in req/s) over recent matched window
+# Derived conservatively from Phase 8B validation macro MAE (5.0882 req/s * ~2.0 margin)
+absolute_error_threshold: 10.0
+
+# Maximum allowable symmetric mean absolute percentage error (sMAPE in [0, 200]%)
+# Phase 8B validation macro sMAPE is 6.858%; live baseline sMAPE is ~6.0%. Threshold allows 50.0%.
+relative_error_threshold: 50.0
+
+# Primary error metric evaluated against the absolute error threshold
+primary_error_metric: "mae"
+
+# Policy enforcement gates
+require_fresh_telemetry: true
+require_valid_forecast: true
+minimum_history_observations: 1
+
+# Provenance and evidence traceability
+threshold_source: "offline_scenario_validation_and_live_baseline_residuals"
+threshold_evidence_reference: "forecasting/config/final_forecaster.yaml#L70-L79;experiments/output/controller-dry-run/dry-run-20261027_105511/matched_residuals.csv"

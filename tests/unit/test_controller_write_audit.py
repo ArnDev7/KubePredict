@@ -91,3 +91,92 @@ kubectl get pods
 
         ps_violations = audit_powershell_file(safe_ps_file)
         assert len(ps_violations) == 0
+
+    def test_flags_forbidden_shell_true(self, tmp_path: Path) -> None:
+        bad_code = """
+import subprocess
+def run_cmd():
+    subprocess.run("kubectl get pods", shell=True)
+"""
+        bad_file = tmp_path / "bad_shell.py"
+        bad_file.write_text(bad_code, encoding="utf-8")
+
+        violations = audit_python_file(bad_file)
+        rules = [v.rule for v in violations]
+        assert "FORBIDDEN_SHELL_TRUE" in rules
+
+    def test_flags_forbidden_kubectl_subprocess_command(self, tmp_path: Path) -> None:
+        bad_code = """
+import subprocess
+def run_scale():
+    subprocess.run(["kubectl", "scale", "deployment", "test", "--replicas=5"], shell=False)
+"""
+        bad_file = tmp_path / "bad_scale.py"
+        bad_file.write_text(bad_code, encoding="utf-8")
+
+        violations = audit_python_file(bad_file)
+        rules = [v.rule for v in violations]
+        assert "FORBIDDEN_KUBECTL_WRITE" in rules
+
+    def test_flags_forbidden_update_and_replace_calls(self, tmp_path: Path) -> None:
+        bad_code = """
+def update_obj(client):
+    client.update_namespaced_deployment("name", "ns", body={})
+    client.replace_namespaced_deployment_scale("name", "ns", body={})
+"""
+        bad_file = tmp_path / "bad_update.py"
+        bad_file.write_text(bad_code, encoding="utf-8")
+
+        violations = audit_python_file(bad_file)
+        assert len(violations) == 2
+        assert all(v.rule == "FORBIDDEN_WRITE_CALL" for v in violations)
+
+    def test_flags_kubectl_replace_and_create_in_powershell(self, tmp_path: Path) -> None:
+        bad_ps = """
+kubectl replace -f deploy.yaml
+kubectl create deployment my-deploy --image=nginx
+kubectl edit deployment my-deploy
+"""
+        bad_file = tmp_path / "bad_verbs.ps1"
+        bad_file.write_text(bad_ps, encoding="utf-8")
+
+        violations = audit_powershell_file(bad_file)
+        assert len(violations) == 3
+        assert all(v.rule == "FORBIDDEN_KUBECTL_WRITE" for v in violations)
+
+    def test_permitted_read_only_commands_pass(self, tmp_path: Path) -> None:
+        safe_ps = """
+kubectl get deployment kubepredict-workload-api -n kubepredict-system -o json
+kubectl get pods -n kubepredict-system -o wide
+kubectl get hpa -A
+"""
+        safe_file = tmp_path / "safe_ro.ps1"
+        safe_file.write_text(safe_ps, encoding="utf-8")
+
+        violations = audit_powershell_file(safe_file)
+        assert len(violations) == 0
+
+    def test_flags_forbidden_cli_flag(self, tmp_path: Path) -> None:
+        bad_code = """
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--live", action="store_true")
+"""
+        bad_file = tmp_path / "bad_cli.py"
+        bad_file.write_text(bad_code, encoding="utf-8")
+
+        violations = audit_python_file(bad_file)
+        rules = [v.rule for v in violations]
+        assert "FORBIDDEN_CLI_FLAG" in rules
+
+    def test_flags_trigger_burst_override_call(self, tmp_path: Path) -> None:
+        bad_code = """
+def run_loop():
+    trigger_burst_override(current_replicas=2)
+"""
+        bad_file = tmp_path / "bad_burst.py"
+        bad_file.write_text(bad_code, encoding="utf-8")
+
+        violations = audit_python_file(bad_file)
+        rules = [v.rule for v in violations]
+        assert "FORBIDDEN_PREMATURE_CALL" in rules

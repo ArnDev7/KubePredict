@@ -1,0 +1,33 @@
+# KubePredict Dry-Run Policy & Arbitration Configuration (Phase 10B)
+# Status: provisional_validated — NOT production_ready.
+# Governs dry-run arbitration between trusted predictive recommendations,
+# rapid-change override, and reactive fallback with safety bounds,
+# cooldown, and downscale stabilization. Live actuation remains strictly forbidden.
+
+schema_version: "1.0.0"
+status: "provisional_validated"
+
+# Rapid-change detection parameters
+request_rate_window_samples: 3
+rapid_change_growth_ratio: 2.0
+rapid_change_absolute_rate: 5.0
+minimum_valid_samples: 2
+
+# Reactive fallback parameters (approximating CPU-based proportional scaling)
+reactive_cpu_target_ratio: 0.70
+
+# Replica bounds (aligned with Phase 9B capacity model)
+minimum_replicas: 1
+maximum_replicas: 10
+
+# Scaling step limits
+maximum_scale_up_step: 3
+maximum_scale_down_step: 1
+
+# Stability and dampening controls
+cooldown_seconds: 60.0
+downscale_stabilization_seconds: 90.0
+
+# Provenance and evidence tracking
+source: "phase_10b_dry_run_arbitration_derivation"
+evidence_reference: "controller/config/capacity.yaml;controller/config/trust_guard.yaml"

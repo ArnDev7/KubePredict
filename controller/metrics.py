@@ -7,6 +7,9 @@ from typing import Any
 
 from prometheus_client import CollectorRegistry, Counter, Gauge, generate_latest
 
+from shared.enums import TrustOutcome
+from shared.models import ForecastTrustDecision
+
 logger = logging.getLogger(__name__)
 
 ALLOWED_OUTCOMES: set[str] = {
@@ -16,6 +19,34 @@ ALLOWED_OUTCOMES: set[str] = {
     "forecast_skipped_unavailable",
     "actual_matched",
     "pending_actual",
+    "dry_run_recommendation_created",
+    "dry_run_skipped_forecast",
+    "dry_run_skipped_missing_replicas",
+    "guarded_dry_run_trusted_eligible",
+    "guarded_dry_run_untrusted_blocked",
+    "guarded_dry_run_skipped_telemetry",
+    "guarded_dry_run_skipped_forecast",
+}
+
+ALLOWED_TRUST_OUTCOMES: set[str] = {o.value for o in TrustOutcome}
+
+
+ALLOWED_DIRECTIONS: set[str] = {"scale_up", "scale_down", "no_change"}
+ALLOWED_REASONS: set[str] = {
+    "forecast_demand",
+    "minimum_bound",
+    "maximum_bound",
+    "scale_up_step_limited",
+    "scale_down_step_limited",
+    "no_change_required",
+    "insufficient_data",
+    "stale_telemetry",
+}
+ALLOWED_CONSTRAINTS: set[str] = {
+    "minimum_bound",
+    "maximum_bound",
+    "scale_up_step_limited",
+    "scale_down_step_limited",
 }
 
 
@@ -128,12 +159,409 @@ class ObserverMetrics:
         self.expired_forecasts_total.inc(count)
 
 
+class DryRunMetrics(ObserverMetrics):
+    """Operational metrics for KubePredict dry-run controller (Phase 9B)."""
+
+    def __init__(self, registry: CollectorRegistry | None = None) -> None:
+        super().__init__(registry=registry)
+
+        self.recommendations_total = Counter(
+            "kubepredict_dry_run_recommendations_total",
+            "Total number of dry-run scaling recommendations generated",
+            ["direction", "reason"],
+            registry=self.registry,
+        )
+
+        self.dry_run_current_replicas = Gauge(
+            "kubepredict_dry_run_current_replicas",
+            "Current replica count read during dry-run cycle",
+            registry=self.registry,
+        )
+
+        self.dry_run_proposed_replicas = Gauge(
+            "kubepredict_dry_run_proposed_replicas",
+            "Proposed replica count before step limits",
+            registry=self.registry,
+        )
+
+        self.dry_run_final_replicas = Gauge(
+            "kubepredict_dry_run_final_replicas",
+            "Final recommended replica count after bounds and step limits",
+            registry=self.registry,
+        )
+
+        self.dry_run_predicted_request_rate = Gauge(
+            "kubepredict_dry_run_predicted_request_rate",
+            "Predicted request rate per second used for capacity recommendation",
+            registry=self.registry,
+        )
+
+        self.dry_run_effective_capacity = Gauge(
+            "kubepredict_dry_run_effective_capacity_per_replica",
+            "Effective capacity per replica configured for capacity model",
+            registry=self.registry,
+        )
+
+        self.constraint_applications_total = Counter(
+            "kubepredict_dry_run_constraint_applications_total",
+            "Total count of constraints applied to scaling recommendations",
+            ["constraint"],
+            registry=self.registry,
+        )
+
+    def record_recommendation(
+        self,
+        direction: str,
+        reason: str,
+        current_replicas: int,
+        proposed_replicas: int,
+        final_replicas: int,
+        predicted_rate: float,
+        effective_capacity: float,
+        constraints: list[str],
+    ) -> None:
+        """Record dry-run recommendation operational metrics."""
+        safe_direction = direction if direction in ALLOWED_DIRECTIONS else "no_change"
+        safe_reason = reason if reason in ALLOWED_REASONS else "forecast_demand"
+
+        self.recommendations_total.labels(direction=safe_direction, reason=safe_reason).inc()
+        self.dry_run_current_replicas.set(current_replicas)
+        self.dry_run_proposed_replicas.set(proposed_replicas)
+        self.dry_run_final_replicas.set(final_replicas)
+        self.dry_run_predicted_request_rate.set(predicted_rate)
+        self.dry_run_effective_capacity.set(effective_capacity)
+
+        for c in constraints:
+            if c in ALLOWED_CONSTRAINTS:
+                self.constraint_applications_total.labels(constraint=c).inc()
+
+
+class GuardedDryRunMetrics(DryRunMetrics):
+    """Operational metrics for KubePredict guarded dry-run controller (Phase 10A)."""
+
+    def __init__(self, registry: CollectorRegistry | None = None) -> None:
+        super().__init__(registry=registry)
+
+        self.guard_evaluations_total = Counter(
+            "kubepredict_guard_evaluations_total",
+            "Total number of forecast trust evaluations performed",
+            ["outcome", "trusted"],
+            registry=self.registry,
+        )
+
+        self.guard_trusted_state = Gauge(
+            "kubepredict_guard_trusted_state",
+            "Current forecast trust state (1.0 = trusted, 0.0 = untrusted)",
+            registry=self.registry,
+        )
+
+        self.guard_matched_residuals = Gauge(
+            "kubepredict_guard_matched_residuals",
+            "Count of eligible matched residuals in recent evidence window",
+            registry=self.registry,
+        )
+
+        self.guard_recent_mae = Gauge(
+            "kubepredict_guard_recent_mae",
+            "Recent Mean Absolute Error (req/s) over matched residual window",
+            registry=self.registry,
+        )
+
+        self.guard_recent_rmse = Gauge(
+            "kubepredict_guard_recent_rmse",
+            "Recent Root Mean Squared Error (req/s) over matched residual window",
+            registry=self.registry,
+        )
+
+        self.guard_recent_smape = Gauge(
+            "kubepredict_guard_recent_smape",
+            "Recent symmetric MAPE (%) over matched residual window",
+            registry=self.registry,
+        )
+
+        self.guard_recent_bias = Gauge(
+            "kubepredict_guard_recent_bias",
+            "Recent forecast signed bias over matched residual window",
+            registry=self.registry,
+        )
+
+        self.guard_residual_age_seconds = Gauge(
+            "kubepredict_guard_residual_age_seconds",
+            "Age in seconds of the most recent matched residual",
+            registry=self.registry,
+        )
+
+        self.guard_recommendation_eligible = Gauge(
+            "kubepredict_guard_recommendation_eligible",
+            "Whether current dry-run recommendation is eligible for policy (1.0 = yes, 0.0 = no)",
+            registry=self.registry,
+        )
+
+    def record_guard_decision(
+        self,
+        decision: ForecastTrustDecision,
+        recommendation_eligible: bool,
+    ) -> None:
+        """Record trust guard evaluation metrics."""
+        outcome_str = (
+            decision.outcome.value
+            if decision.outcome.value in ALLOWED_TRUST_OUTCOMES
+            else "unknown"
+        )
+        trusted_str = "true" if decision.trusted else "false"
+
+        self.guard_evaluations_total.labels(outcome=outcome_str, trusted=trusted_str).inc()
+        self.guard_trusted_state.set(1.0 if decision.trusted else 0.0)
+        self.guard_matched_residuals.set(decision.matched_residual_count)
+
+        if decision.recent_mae is not None:
+            self.guard_recent_mae.set(decision.recent_mae)
+        if decision.recent_rmse is not None:
+            self.guard_recent_rmse.set(decision.recent_rmse)
+        if decision.recent_smape is not None:
+            self.guard_recent_smape.set(decision.recent_smape)
+        if decision.recent_bias is not None:
+            self.guard_recent_bias.set(decision.recent_bias)
+
+        res_age = decision.details.get("residual_window", {}).get("latest_residual_age_seconds")
+        if res_age is not None:
+            self.guard_residual_age_seconds.set(float(res_age))
+
+        self.guard_recommendation_eligible.set(1.0 if recommendation_eligible else 0.0)
+
+
+ALLOWED_POLICY_MODES: set[str] = {
+    "predictive",
+    "reactive_fallback",
+    "rapid_change_override",
+    "no_recommendation",
+}
+
+
+class ArbitrationMetrics(GuardedDryRunMetrics):
+    """Operational metrics for KubePredict arbitrated dry-run controller (Phase 10B)."""
+
+    def __init__(self, registry: CollectorRegistry | None = None) -> None:
+        super().__init__(registry=registry)
+
+        self.policy_decisions_total = Counter(
+            "kubepredict_policy_decisions_total",
+            "Total number of arbitrated autoscaling policy decisions",
+            ["mode", "reason", "direction"],
+            registry=self.registry,
+        )
+
+        self.policy_mode = Gauge(
+            "kubepredict_policy_mode",
+            "Active dry-run policy mode gauge (1.0 for active mode, 0.0 otherwise)",
+            ["mode"],
+            registry=self.registry,
+        )
+
+        self.rapid_change_detected = Gauge(
+            "kubepredict_rapid_change_detected",
+            "Whether rapid change in request rate is detected (1.0 = yes, 0.0 = no)",
+            registry=self.registry,
+        )
+
+        self.rapid_change_growth_ratio = Gauge(
+            "kubepredict_rapid_change_growth_ratio",
+            "Recent request rate growth ratio relative to baseline",
+            registry=self.registry,
+        )
+
+        self.reactive_cpu_utilization_ratio = Gauge(
+            "kubepredict_reactive_cpu_utilization_ratio",
+            "Recent workload pod CPU utilization ratio relative to request",
+            registry=self.registry,
+        )
+
+        self.reactive_recommendation = Gauge(
+            "kubepredict_reactive_recommendation",
+            "Current raw reactive fallback recommendation",
+            registry=self.registry,
+        )
+
+        self.predictive_recommendation = Gauge(
+            "kubepredict_predictive_recommendation",
+            "Current unconstrained predictive recommendation",
+            registry=self.registry,
+        )
+
+        self.final_dry_run_recommendation = Gauge(
+            "kubepredict_final_dry_run_recommendation",
+            "Final constrained dry-run recommendation",
+            registry=self.registry,
+        )
+
+        self.cooldown_active = Gauge(
+            "kubepredict_cooldown_active",
+            "Whether scaling cooldown is currently active (1.0 = yes, 0.0 = no)",
+            registry=self.registry,
+        )
+
+        self.downscale_stabilized = Gauge(
+            "kubepredict_downscale_stabilized",
+            "Whether downscale recommendation was stabilized (1.0 = yes, 0.0 = no)",
+            registry=self.registry,
+        )
+
+        self.policy_no_recommendation_total = Counter(
+            "kubepredict_policy_no_recommendation_total",
+            "Total number of cycles where no recommendation could be made",
+            ["reason"],
+            registry=self.registry,
+        )
+
+    def record_arbitration_decision(self, decision: Any) -> None:
+        """Record an arbitration decision into Prometheus metrics."""
+        mode_str = (
+            decision.policy_mode.value
+            if hasattr(decision.policy_mode, "value")
+            else str(decision.policy_mode)
+        )
+        reason_str = (
+            decision.primary_reason.value
+            if hasattr(decision.primary_reason, "value")
+            else str(decision.primary_reason)
+        )
+        direction_str = (
+            decision.direction.value
+            if hasattr(decision.direction, "value")
+            else str(decision.direction)
+        )
+
+        self.policy_decisions_total.labels(
+            mode=mode_str,
+            reason=reason_str,
+            direction=direction_str,
+        ).inc()
+
+        for m in sorted(ALLOWED_POLICY_MODES):
+            self.policy_mode.labels(mode=m).set(1.0 if m == mode_str else 0.0)
+
+        if decision.rapid_change_result is not None:
+            self.rapid_change_detected.set(1.0 if decision.rapid_change_result.detected else 0.0)
+            if decision.rapid_change_result.growth_ratio is not None:
+                self.rapid_change_growth_ratio.set(decision.rapid_change_result.growth_ratio)
+
+        if (
+            decision.reactive_input is not None
+            and decision.reactive_input.current_cpu_utilization_ratio is not None
+        ):
+            self.reactive_cpu_utilization_ratio.set(
+                decision.reactive_input.current_cpu_utilization_ratio
+            )
+
+        if decision.reactive_recommendation is not None:
+            self.reactive_recommendation.set(float(decision.reactive_recommendation))
+
+        if decision.predictive_recommendation is not None:
+            self.predictive_recommendation.set(float(decision.predictive_recommendation))
+
+        if decision.final_recommendation is not None:
+            self.final_dry_run_recommendation.set(float(decision.final_recommendation))
+
+        self.cooldown_active.set(1.0 if decision.cooldown_blocked else 0.0)
+        is_stab = "downscale_stabilized" in decision.applied_constraints
+        self.downscale_stabilized.set(1.0 if is_stab else 0.0)
+
+        if mode_str == "no_recommendation":
+            self.policy_no_recommendation_total.labels(reason=reason_str).inc()
+
+
+class LiveControllerMetrics:
+    """Fixed-cardinality Prometheus metrics for Phase 11 live controller."""
+
+    def __init__(self, registry: CollectorRegistry | None = None) -> None:
+        self.registry = registry if registry is not None else CollectorRegistry(auto_describe=True)
+
+        self.scaling_attempts_total = Counter(
+            "kubepredict_scaling_attempts_total",
+            "Total number of scale subresource patch attempts",
+            ["result", "policy_mode", "direction"],
+            registry=self.registry,
+        )
+        self.scaling_rejections_total = Counter(
+            "kubepredict_scaling_rejections_total",
+            "Total number of rejected scaling decisions",
+            ["reason"],
+            registry=self.registry,
+        )
+        self.scaling_previous_replicas = Gauge(
+            "kubepredict_scaling_previous_replicas",
+            "Workload replica count before scaling attempt",
+            registry=self.registry,
+        )
+        self.scaling_requested_replicas = Gauge(
+            "kubepredict_scaling_requested_replicas",
+            "Workload replica count requested in scaling decision",
+            registry=self.registry,
+        )
+        self.scaling_observed_replicas = Gauge(
+            "kubepredict_scaling_observed_replicas",
+            "Workload replica count observed after scaling attempt",
+            registry=self.registry,
+        )
+        self.scaling_api_duration_seconds = Gauge(
+            "kubepredict_scaling_api_duration_seconds",
+            "Duration in seconds of the scale subresource API call",
+            registry=self.registry,
+        )
+        self.scaling_conflicts_total = Counter(
+            "kubepredict_scaling_conflicts_total",
+            "Total HTTP 409 conflict errors encountered when patching scale",
+            registry=self.registry,
+        )
+        self.controller_live_enabled = Gauge(
+            "kubepredict_controller_live_enabled",
+            "1.0 if live scaling switches are enabled, 0.0 otherwise",
+            registry=self.registry,
+        )
+        self.controller_cycle_errors_total = Counter(
+            "kubepredict_controller_cycle_errors_total",
+            "Total controller loop execution errors categorized by failure type",
+            ["category"],
+            registry=self.registry,
+        )
+
+    def record_scale_result(
+        self,
+        result: Any,
+        policy_mode: str,
+        direction: str,
+    ) -> None:
+        """Record a ScaleWriteResult into Prometheus metrics."""
+        outcome = "succeeded" if result.succeeded else ("rejected" if result.rejected else "failed")
+        self.scaling_attempts_total.labels(
+            result=outcome,
+            policy_mode=policy_mode,
+            direction=direction,
+        ).inc()
+
+        if result.rejected and result.rejection_reason:
+            self.scaling_rejections_total.labels(reason=str(result.rejection_reason)).inc()
+
+        self.scaling_previous_replicas.set(float(result.previous_replicas))
+        self.scaling_requested_replicas.set(float(result.requested_replicas))
+
+        if result.observed_replicas_after is not None:
+            self.scaling_observed_replicas.set(float(result.observed_replicas_after))
+
+        if result.duration_ms > 0:
+            self.scaling_api_duration_seconds.set(result.duration_ms / 1000.0)
+
+        if result.conflict_count > 0:
+            self.scaling_conflicts_total.inc(result.conflict_count)
+
+
 class _MetricsHandler(BaseHTTPRequestHandler):
     """HTTP handler exposing Prometheus metrics from the isolated registry."""
 
     registry: CollectorRegistry
+    is_ready: bool = True
 
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         if self.path in ("/metrics", "/metrics/"):
             output = generate_latest(self.registry)
             self.send_response(200)
@@ -146,6 +574,17 @@ class _MetricsHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
             self.wfile.write(b"OK\n")
+        elif self.path == "/readyz":
+            if getattr(_MetricsHandler, "is_ready", True):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(b"READY\n")
+            else:
+                self.send_response(503)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(b"NOT_READY\n")
         else:
             self.send_response(404)
             self.end_headers()
@@ -169,6 +608,10 @@ class MetricsServer:
         self.registry = registry if registry is not None else CollectorRegistry(auto_describe=True)
         self._server: HTTPServer | None = None
         self._thread: threading.Thread | None = None
+
+    def set_ready(self, is_ready: bool) -> None:
+        """Set readiness probe state."""
+        _MetricsHandler.is_ready = bool(is_ready)
 
     def start(self) -> None:
         """Start the metrics HTTP server in a daemon thread."""

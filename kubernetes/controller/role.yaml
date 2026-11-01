@@ -1,0 +1,27 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubepredict-controller-scale
+  namespace: kubepredict-system
+  labels:
+    app.kubernetes.io/name: kubepredict-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: kubepredict
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments/scale
+    resourceNames:
+      - kubepredict-workload-api
+    verbs:
+      - get
+      - patch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    resourceNames:
+      - kubepredict-workload-api
+    verbs:
+      - get

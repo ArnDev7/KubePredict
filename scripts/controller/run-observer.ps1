@@ -70,8 +70,8 @@ if ($desired -ne 2 -or $available -ne 2) {
 }
 
 # Verify no HPA exists
-$hpaList = (kubectl get hpa -A --no-headers 2>&1)
-if ($hpaList -and $hpaList -notmatch "No resources found") {
+$hpaList = (kubectl get hpa -A --ignore-not-found)
+if ($hpaList) {
     Write-Error "Active HPA found in cluster. Live HPA is forbidden in Phase 9A."
 }
 Write-Host "[CHECK] Zero active HPA resources verified."

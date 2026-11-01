@@ -10,4 +10,4 @@ format-check:
 	python -m ruff format --check .
 
 type-check:
-	python -m mypy app controller forecasting config shared
+	python -m mypy app controller forecasting config shared load_testing experiments tests

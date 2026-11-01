@@ -8,7 +8,6 @@ Contains zero Kubernetes API writes, zero replica calculations, and zero scaling
 import logging
 import time
 from datetime import datetime, timedelta
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -80,7 +79,11 @@ def execute_observer_cycle(
 
     # 1. Retrieve recent history from Prometheus
     # If persistence fallback is enabled, minimum required history is 1 sample
-    min_history = 1 if forecasting_service.persistence_fallback_enabled else forecasting_service.model.minimum_history_required
+    min_history = (
+        1
+        if forecasting_service.persistence_fallback_enabled
+        else forecasting_service.model.minimum_history_required
+    )
     telemetry_res = telemetry_reader.read_history(curr_utc, minimum_history=min_history)
 
     # 2. Match pending forecasts whose target time has arrived with available telemetry

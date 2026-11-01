@@ -21,19 +21,55 @@ FORBIDDEN_METHOD_CALLS: set[str] = {
     "replace_namespaced_deployment_scale",
     "patch_namespaced_deployment",
     "replace_namespaced_deployment",
+    "update_namespaced_deployment",
+    "update_namespaced_deployment_scale",
     "create_namespaced_deployment",
     "delete_namespaced_deployment",
+    "patch_namespaced_custom_object",
+    "replace_namespaced_custom_object",
+    "create_namespaced_custom_object",
+    "delete_namespaced_custom_object",
 }
 
 FORBIDDEN_CALL_VERBS: set[str] = {
     "scale",
     "patch",
     "apply",
+    "replace",
+    "create",
+    "delete",
 }
 
 FORBIDDEN_KUBECTL_VERBS: list[re.Pattern[str]] = [
-    re.compile(r"\bkubectl\s+(apply|scale|patch|delete)\b", re.IGNORECASE),
+    re.compile(r"\bkubectl\s+(apply|scale|patch|delete|replace|create|edit)\b", re.IGNORECASE),
 ]
+
+FORBIDDEN_CLI_FLAGS: set[str] = {
+    "--live",
+    "--apply",
+    "--scale",
+}
+
+FORBIDDEN_PREMATURE_CALLS: set[str] = {
+    "trigger_burst_override",
+    "detect_workload_drift",
+    "live_scaling_actuator",
+}
+
+
+PERMITTED_SCALE_MODULES: set[str] = {
+    "kubernetes_scale.py",
+    "controller_loop.py",
+}
+
+INFRASTRUCTURE_SCRIPTS: set[str] = {
+    "build-controller.ps1",
+    "deploy-controller.ps1",
+    "remove-controller.ps1",
+    "enable-live-validation.ps1",
+    "disable-live-scaling.ps1",
+    "inspect-live-controller.ps1",
+}
 
 
 @dataclass
@@ -63,30 +99,35 @@ class _WriteCallVisitor(ast.NodeVisitor):
         self.file_path = file_path
         self.source_lines = source_lines
         self.violations: list[AuditViolation] = []
+        self.file_name = Path(file_path).name
 
-    def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
+    def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             base_mod = alias.name.split(".")[0]
-            if alias.name in FORBIDDEN_PYTHON_IMPORTS or base_mod == "kubernetes":
+            if (alias.name in FORBIDDEN_PYTHON_IMPORTS or base_mod == "kubernetes") and (
+                self.file_name not in PERMITTED_SCALE_MODULES
+            ):
                 self._record_violation(
                     node.lineno,
                     "FORBIDDEN_K8S_IMPORT",
-                    f"Importing '{alias.name}' is forbidden in observe-only controller runtime",
+                    f"Importing '{alias.name}' is forbidden in module '{self.file_name}'",
                 )
         self.generic_visit(node)
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module:
             base_mod = node.module.split(".")[0]
-            if node.module in FORBIDDEN_PYTHON_IMPORTS or base_mod == "kubernetes":
+            if (node.module in FORBIDDEN_PYTHON_IMPORTS or base_mod == "kubernetes") and (
+                self.file_name not in PERMITTED_SCALE_MODULES
+            ):
                 self._record_violation(
                     node.lineno,
                     "FORBIDDEN_K8S_IMPORT",
-                    f"Importing from '{node.module}' is forbidden in observe-only controller runtime",
+                    f"Importing from '{node.module}' is forbidden in module '{self.file_name}'",
                 )
         self.generic_visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+    def visit_Call(self, node: ast.Call) -> None:
         # Check call method name
         func_name = ""
         if isinstance(node.func, ast.Attribute):
@@ -94,24 +135,89 @@ class _WriteCallVisitor(ast.NodeVisitor):
         elif isinstance(node.func, ast.Name):
             func_name = node.func.id
 
-        if func_name in FORBIDDEN_METHOD_CALLS:
+        if func_name == "patch_namespaced_deployment_scale":
+            if self.file_name != "kubernetes_scale.py":
+                self._record_violation(
+                    node.lineno,
+                    "FORBIDDEN_WRITE_CALL",
+                    f"Calling '{func_name}' is permitted only within kubernetes_scale.py",
+                )
+        elif func_name in FORBIDDEN_METHOD_CALLS:
             self._record_violation(
                 node.lineno,
                 "FORBIDDEN_WRITE_CALL",
-                f"Calling write method '{func_name}' is forbidden in observe-only controller",
+                f"Calling write method '{func_name}' is forbidden in controller runtime",
             )
-        elif func_name.lower() in FORBIDDEN_CALL_VERBS and isinstance(node.func, ast.Attribute):
-            # Flag obj.scale(...) or obj.patch(...)
+        elif (
+            func_name.lower() in FORBIDDEN_CALL_VERBS
+            and isinstance(node.func, ast.Attribute)
+            and self.file_name != "kubernetes_scale.py"
+        ):
+            # Flag obj.scale(...) or obj.patch(...) outside kubernetes_scale.py
             self._record_violation(
                 node.lineno,
                 "SUSPICIOUS_WRITE_VERB",
-                f"Invoking '{func_name}' method is forbidden in observe-only controller",
+                f"Invoking '{func_name}' method is forbidden in controller runtime",
             )
+        elif func_name in FORBIDDEN_PREMATURE_CALLS:
+            self._record_violation(
+                node.lineno,
+                "FORBIDDEN_PREMATURE_CALL",
+                f"Calling premature feature '{func_name}' is forbidden in Phase 11 controller",
+            )
+
+        # Check for forbidden CLI flags like --live, --apply, --scale
+        for arg in node.args:
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                if arg.value in FORBIDDEN_CLI_FLAGS:
+                    self._record_violation(
+                        node.lineno,
+                        "FORBIDDEN_CLI_FLAG",
+                        f"CLI flag '{arg.value}' is strictly forbidden in Phase 10A controller",
+                    )
+
+        # Check for shell=True in subprocess or other calls
+        for kw in node.keywords:
+            if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+                self._record_violation(
+                    node.lineno,
+                    "FORBIDDEN_SHELL_TRUE",
+                    "Subprocess call with shell=True is strictly forbidden in controller runtime",
+                )
+
+        # Check call arguments for forbidden kubectl commands
+        for arg in node.args:
+            if isinstance(arg, ast.List):
+                parts = [
+                    str(el.value)
+                    for el in arg.elts
+                    if isinstance(el, ast.Constant) and isinstance(el.value, str)
+                ]
+                cmd_str = " ".join(parts)
+                for pattern in FORBIDDEN_KUBECTL_VERBS:
+                    match = pattern.search(cmd_str)
+                    if match:
+                        self._record_violation(
+                            node.lineno,
+                            "FORBIDDEN_KUBECTL_WRITE",
+                            f"Found write command '{match.group(0)}' in call arguments",
+                        )
+            elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                for pattern in FORBIDDEN_KUBECTL_VERBS:
+                    match = pattern.search(arg.value)
+                    if match:
+                        self._record_violation(
+                            node.lineno,
+                            "FORBIDDEN_KUBECTL_WRITE",
+                            f"Found write command '{match.group(0)}' in call argument string",
+                        )
 
         self.generic_visit(node)
 
     def _record_violation(self, lineno: int, rule: str, explanation: str) -> None:
-        snippet = self.source_lines[lineno - 1].strip() if 0 < lineno <= len(self.source_lines) else ""
+        snippet = (
+            self.source_lines[lineno - 1].strip() if 0 < lineno <= len(self.source_lines) else ""
+        )
         self.violations.append(
             AuditViolation(
                 file_path=self.file_path,
@@ -151,14 +257,26 @@ def audit_python_file(path: Path) -> list[AuditViolation]:
 
 def audit_powershell_file(path: Path) -> list[AuditViolation]:
     """Audit a PowerShell script for forbidden write-capable kubectl invocations."""
+    if path.name in INFRASTRUCTURE_SCRIPTS:
+        return []
+
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     violations: list[AuditViolation] = []
 
+    in_block_comment = False
+
     for i, line in enumerate(lines, start=1):
         stripped = line.strip()
-        # Ignore comment lines
-        if stripped.startswith("#") or stripped.startswith("<#"):
+        if in_block_comment:
+            if "#>" in stripped:
+                in_block_comment = False
+            continue
+        if "<#" in stripped:
+            if "#>" not in stripped:
+                in_block_comment = True
+            continue
+        if stripped.startswith("#"):
             continue
         for pattern in FORBIDDEN_KUBECTL_VERBS:
             match = pattern.search(line)

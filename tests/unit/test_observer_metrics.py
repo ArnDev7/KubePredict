@@ -1,8 +1,7 @@
 """Unit tests for ObserverMetrics and MetricsServer (Phase 9A)."""
 
-from prometheus_client import CollectorRegistry
-from prometheus_client.parser import text_string_to_metric_families
 import httpx
+from prometheus_client import CollectorRegistry, generate_latest
 
 from controller.metrics import MetricsServer, ObserverMetrics
 
@@ -21,16 +20,12 @@ class TestObserverMetrics:
         m2.record_cycle("forecast_skipped_stale_telemetry", 45.0, 10, 0)
 
         # Inspect reg1
-        metrics_text1 = "\n".join(
-            str(family) for family in reg1.collect()
-        )
+        metrics_text1 = generate_latest(reg1).decode("utf-8")
         assert 'outcome="forecast_created"' in metrics_text1
         assert 'outcome="forecast_skipped_stale_telemetry"' not in metrics_text1
 
         # Inspect reg2
-        metrics_text2 = "\n".join(
-            str(family) for family in reg2.collect()
-        )
+        metrics_text2 = generate_latest(reg2).decode("utf-8")
         assert 'outcome="forecast_skipped_stale_telemetry"' in metrics_text2
         assert 'outcome="forecast_created"' not in metrics_text2
 
@@ -41,12 +36,14 @@ class TestObserverMetrics:
         metrics.record_forecast(model_name="persistence", fallback_used=False, predicted_val=42.5)
         metrics.record_matched(actual_val=45.0, abs_err=2.5)
 
-        families = {f.name: f for f in reg.collect()}
-        assert "kubepredict_observer_forecasts_total" in families
-        assert "kubepredict_observer_prediction_request_rate" in families
-        assert "kubepredict_observer_actual_request_rate" in families
-        assert "kubepredict_observer_absolute_error" in families
-        assert "kubepredict_observer_matched_forecasts_total" in families
+        collected = list(reg.collect())
+        families = {f.name: f for f in collected}
+        sample_names = {s.name for f in collected for s in f.samples}
+        assert "kubepredict_observer_forecasts_total" in sample_names
+        assert "kubepredict_observer_prediction_request_rate" in sample_names
+        assert "kubepredict_observer_actual_request_rate" in sample_names
+        assert "kubepredict_observer_absolute_error" in sample_names
+        assert "kubepredict_observer_matched_forecasts_total" in sample_names
 
         pred_sample = families["kubepredict_observer_prediction_request_rate"].samples[0]
         assert pred_sample.value == 42.5
