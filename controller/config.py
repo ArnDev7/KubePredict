@@ -69,8 +69,14 @@ class ObserverConfig(BaseModel):
             raise ValueError("prometheus_url cannot be empty")
         parsed = urlparse(trimmed)
         hostname = (parsed.hostname or "").lower()
-        if hostname not in LOCALHOST_HOSTNAMES:
-            raise ValueError(f"prometheus_url must target localhost for Phase 9A; got '{hostname}'")
+        # Allow localhost and in‑cluster Prometheus service hostname for Phase 9A.
+        allowed_internal = {
+            "kubepredict-prometheus.kubepredict-monitoring.svc.cluster.local",
+        }
+        if hostname not in LOCALHOST_HOSTNAMES and hostname not in allowed_internal:
+            raise ValueError(
+                f"prometheus_url must target localhost or the in‑cluster Prometheus service for Phase 9A; got '{hostname}'"
+            )
         return trimmed
 
     @field_validator("query")
@@ -131,3 +137,8 @@ class ObserverConfig(BaseModel):
         if not isinstance(data, dict):
             raise ValueError(f"Configuration file {p} must contain a YAML mapping")
         return cls(**data)
+
+
+def load_observer_config(path: str | Path) -> ObserverConfig:
+    """Convenience function to load and validate observer configuration."""
+    return ObserverConfig.from_yaml_file(path)

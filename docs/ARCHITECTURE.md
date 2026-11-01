@@ -152,16 +152,47 @@ Safety order:
 - Automated PowerShell runner and inspection scripts (`scripts/controller/`) with guaranteed port-forward cleanup
 - Complete design reference documented in [`docs/OBSERVE_ONLY_CONTROLLER.md`](file:///docs/OBSERVE_ONLY_CONTROLLER.md)
 
-### Phase 9B: Replica Calculation, Safety Guard, and Predictive Controller (Planned)
-- Replica calculation engine mapping predicted request rates to target pod counts
-- Safety guard and rate limiter implementing confidence validation, burst overrides, cooldown periods, and reactive fallback
-- Dry-run scaling recommendation generation and structured reasoning logs
-- Controlled execution and validation of scaling recommendations
+### Phase 9B: Capacity Model and Dry-Run Replica Recommendations (Implemented & Validated)
+- Transparent request-capacity model ([`controller/capacity.py`](file:///controller/capacity.py)) converting predicted request rate to bounded, step-limited replica count via deterministic pure function (zero I/O, zero network)
+- Pydantic v2 capacity configuration ([`controller/capacity_config.py`](file:///controller/capacity_config.py)) with calibrated per-replica capacity (25.0 req/s), target utilization (0.70), safety margin (0.90), effective capacity 15.75 req/s, replica bounds [1,10], step limits +3/-1
+- Calibration from 74 valid Phase 7B fixed-baseline telemetry intervals with status `provisional_calibrated`
+- Strictly read-only Kubernetes Deployment reader ([`controller/k8s_reader.py`](file:///controller/k8s_reader.py)) via `subprocess.run()` with `shell=False`, fixed context `kind-kubepredict-dev`
+- Dry-run decision builder ([`controller/decision.py`](file:///controller/decision.py)) producing `ScalingDecision` with `mode=DRY_RUN`, `live_scaling_enabled=False`, `confidence=None`, `action_executed=False`
+- Dry-run cycle executor ([`controller/dry_run.py`](file:///controller/dry_run.py)) composing Phase 9A observer with capacity model
+- Extended static write-capability auditor covering 7 mutation commands, `shell=True` rejection, and Kubernetes client write methods
+- Dry-run operational metrics (7 new metrics) with strict low-cardinality labels
+- Automated PowerShell validation, execution, and inspection scripts (`scripts/controller/`)
+- Complete design reference documented in [`docs/DRY_RUN_CONTROLLER.md`](file:///docs/DRY_RUN_CONTROLLER.md)
 
-### Phase 10: Comparative Live Experiments (Planned)
-- Controlled execution of the 5 scenario profiles across all 4 configurations (`fixed`, `hpa`, `predictive`, `guarded`)
-- Empirical performance comparison across latency, throughput, resource efficiency, and SLO compliance
-- Statistical analysis of recorded telemetry and publication of benchmark evidence
+### Phase 10A: Forecast Trust Guard and Guarded Dry-Run (Implemented & Validated)
+- Explicit reliability guard ([`controller/trust_guard.py`](file:///controller/trust_guard.py)) evaluating telemetry freshness, forecast validity, and sliding residual window error
+- Validated trust guard configuration ([`controller/trust_config.py`](file:///controller/trust_config.py)) with conservative thresholds (`MAE <= 10.0 req/s`, `sMAPE <= 50.0%`, `status: provisional_validated`)
+- Pure error metrics calculation ([`controller/trust_metrics.py`](file:///controller/trust_metrics.py)): MAE, RMSE, sMAPE, signed bias over matched residuals
+- Non-mutating residual window construction ([`controller/residual_window.py`](file:///controller/residual_window.py)) strictly excluding future records and stale data
+- Fixed trust outcome enumeration ([`shared/enums.py`](file:///shared/enums.py)) and typed trust decision contract (`ForecastTrustDecision`)
+- Guarded dry-run cycle execution ([`controller/guarded_dry_run.py`](file:///controller/guarded_dry_run.py)) marking trusted forecasts `recommendation_eligible=True` and blocking untrusted forecasts (`recommendation_eligible=False`)
+- Untrusted forecasts do NOT trigger reactive fallback (deferred to Phase 11)
+- Zero Kubernetes writes, zero actuation, `action_executed=False` guaranteed across all cycles
+- 9 fixed-cardinality Prometheus operational metrics (`GuardedDryRunMetrics`)
+- Automated PowerShell scripts (`scripts/controller/validate-trust-guard.ps1`, `run-guarded-dry-run.ps1`, `inspect-trust-guard-run.ps1`)
+- Complete design reference documented in [`docs/FORECAST_TRUST_GUARD.md`](file:///docs/FORECAST_TRUST_GUARD.md)
+
+### Phase 10B: Rapid-Change Detection, Reactive Fallback, and Dry-Run Arbitration (Implemented & Validated)
+- Deterministic request-rate rapid-change detector ([`controller/rapid_change.py`](file:///controller/rapid_change.py)) with safe near-zero baseline handling and non-learning thresholds
+- Read-only pod CPU utilization collector ([`controller/cpu_telemetry.py`](file:///controller/cpu_telemetry.py)) parsing `kubectl top pod` without mutation capabilities
+- HPA-style proportional reactive fallback ([`controller/reactive_fallback.py`](file:///controller/reactive_fallback.py)) operating strictly when forecasts are untrusted
+- Deterministic arbitration engine ([`controller/arbitration.py`](file:///controller/arbitration.py)) selecting `rapid_change_override`, `predictive`, `reactive_fallback`, or `no_recommendation`
+- Safe policy constraints: replica bounds [1, 10], step limits [+3, -1], cooldown dampening ([`controller/cooldown.py`](file:///controller/cooldown.py)), and downscale stabilization ([`controller/stabilization.py`](file:///controller/stabilization.py))
+- Complete typed decision contract ([`controller/arbitration_decision.py`](file:///controller/arbitration_decision.py)) with `action_executed=False` guaranteed
+- 11 fixed-cardinality Prometheus operational metrics (`ArbitrationMetrics`)
+- Automated PowerShell helpers (`scripts/controller/validate-arbitration.ps1`, `run-arbitration-dry-run.ps1`, `inspect-arbitration-run.ps1`)
+- Complete design reference documented in [`docs/ARBITRATION_POLICY.md`](file:///docs/ARBITRATION_POLICY.md)
+
+### Phase 11: Controller Packaging, RBAC, Safe Live Scaling & Comparative Experiments (Planned)
+- Controller in-cluster Deployment, ServiceAccount, Role, RoleBinding
+- Safe live scaling actuation with explicit guardrails
+- Controlled comparative experiments across autoscaling strategies (Fixed vs HPA vs KubePredict)
+
 
 
 

@@ -10,13 +10,16 @@ requires-python = ">=3.11,<3.15"
 license = {text = "MIT"}
 authors = [{name = "Arnav Tiwari and team"}]
 dependencies = [
-    "pydantic>=2.0",
+    "pydantic>=2.0,<3.0",
+
     "pydantic-settings>=2.0",
     "fastapi>=0.100",
     "uvicorn[standard]>=0.23",
     "prometheus-client>=0.17",
+    "httpx>=0.24",
     "numpy>=1.24",
     "pandas>=2.0",
+    "kubernetes>=28.0",
 ]
 
 [project.optional-dependencies]

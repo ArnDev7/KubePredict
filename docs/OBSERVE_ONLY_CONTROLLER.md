@@ -159,3 +159,29 @@ python -m controller.cli observe --config config/observer.yaml --frozen-forecast
 - **No Safety Guards**: Does not filter predictions by confidence, detect burst spikes, or suppress oscillations.
 - **No Reactive Fallback**: If telemetry is stale or missing, the controller records skipped cycles without falling back to reactive CPU metrics.
 - **Pure In-Process Controller**: Not packaged as a container or deployed to Kubernetes in Phase 9A.
+
+---
+
+## 9. Live Verification & Execution Results
+
+Live cluster verification was executed against local cluster `kind-kubepredict-dev`:
+
+| Parameter | Value |
+|---|---|
+| **Run ID** | `observe-20261027_105116` |
+| **Status** | `completed` |
+| **Output Directory** | `experiments/output/controller-observe/observe-20261027_105116` |
+| **Cycles Executed** | 12 / 12 (180.0s elapsed) |
+| **Forecasts Created** | 12 |
+| **Forecasts Matched** | 11 |
+| **Forecasts Pending** | 1 (12th cycle target timestamp in future at completion) |
+| **Forecasts Expired** | 0 |
+| **Residual Count** | 11 |
+| **Mean Absolute Error (MAE)** | 0.0445 req/s |
+| **All Cycles Valid** | `true` |
+| **Telemetry Freshness Enforced** | `true` (latest age ~0.0s, fresh <= 30.0s) |
+| **Zero Replica Recommendations** | `true` (strictly observe-only) |
+| **Zero Kubernetes Writes** | `true` (no K8s client, no mutation calls) |
+| **Metrics Endpoint** | `http://127.0.0.1:9101/metrics` verified HTTP 200 |
+| **Temporary Process Cleanup** | Prometheus port-forward (PID: 34380) stopped; ports 9090 & 9101 released |
+| **Kubernetes Non-Mutation** | Workload deployment generation 6, desired 2, available 2, ready 2 preserved |

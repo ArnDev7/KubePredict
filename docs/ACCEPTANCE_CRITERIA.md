@@ -32,10 +32,15 @@
 - Observe-only controller connects frozen forecaster to live Prometheus telemetry without Kubernetes writes. `[VERIFIED: Phase 9A - ObserverConfig, LiveTelemetryReader, ForecastStore, operational metrics, documented in docs/OBSERVE_ONLY_CONTROLLER.md]`
 - Static write-capability audit verifies zero Kubernetes write capability in controller runtime. `[VERIFIED: Phase 9A - controller/audit.py AST analysis confirms no K8s client imports or write calls]`
 - Future actual matching and residual calculation verified for empirical guard evidence. `[VERIFIED: Phase 9A - pending forecasts resolved strictly after target timestamps; signed residuals recorded outside Git]`
-- Dry-run mode is implemented before live scaling. `[PLANNED: Phase 9B]`
-- Scaling decisions contain reason codes and structured logs. `[PLANNED: Phase 9B]`
-- Replica bounds, cooldown, bounded step size, and fallback are tested. `[PLANNED: Phase 9B]`
-- Kubernetes permissions follow least privilege. `[PLANNED: Phase 9B]`
+- Dry-run mode is implemented before live scaling. `[VERIFIED: Phase 9B - controller/dry_run.py produces ScalingDecision records with mode=DRY_RUN, live_scaling_enabled=False, action_executed=False]`
+- Scaling decisions contain reason codes and structured logs. `[VERIFIED: Phase 9B - 6 DecisionReason values (FORECAST_DEMAND, NO_CHANGE_REQUIRED, MINIMUM_BOUND, MAXIMUM_BOUND, SCALE_UP_STEP_LIMITED, SCALE_DOWN_STEP_LIMITED) with full calculation details]`
+- Replica bounds, bounded step size, and capacity model are tested. `[VERIFIED: Phase 9B - bounds [1,10], step limits +3/-1, effective capacity 15.75 req/s validated across 8 deterministic examples and 331 unit tests]`
+- Static write-capability audit covers all Phase 9B controller code. `[VERIFIED: Phase 9B - 19 files scanned, 0 Kubernetes write calls, 0 shell=True, 0 K8s client imports]`
+- Capacity model is transparent and calibrated from empirical data. `[VERIFIED: Phase 9B - calibrated from 74 valid Phase 7B intervals with status provisional_calibrated; documented in docs/DRY_RUN_CONTROLLER.md]`
+- Forecast trust guard evaluates telemetry freshness, forecast validity, residual window, and error thresholds (MAE/sMAPE) to gate dry-run recommendation eligibility without Kubernetes writes or reactive fallback. `[VERIFIED: Phase 10A - TrustGuardConfig, ForecastTrustDecision, evaluate_forecast_trust, GuardedDryRunRecord, operational metrics in docs/FORECAST_TRUST_GUARD.md]`
+- Dry-run arbitration coordinates forecast trust, rapid-change detection, and read-only CPU reactive fallback with replica bounds, step limits, cooldown dampening, downscale stabilization, and zero Kubernetes mutations. `[VERIFIED: Phase 10B - PolicyConfig, detect_rapid_change, calculate_reactive_fallback, arbitrate_policy_decision, CooldownManager, DownscaleStabilizer, action_executed=False, documented in docs/ARBITRATION_POLICY.md]`
+- Live scaling actuation, controller in-cluster Deployment, and RBAC are deferred. `[PLANNED: Phase 11]`
+- Kubernetes permissions and live controller deployment follow least privilege. `[PLANNED: Phase 11]`
 
 ## Experiments & Scenario Generation
 - Identical, deterministic workload scenarios exist to drive controllers under identical traffic patterns. `[VERIFIED: Phase 7A - 5 deterministic profiles: steady, ramp, periodic, sudden_increase, drift]`

@@ -1,0 +1,29 @@
+# KubePredict Transparent Capacity Configuration (Phase 9B)
+# Status: provisional_calibrated — NOT production_ready.
+# Calibrated from Phase 7B fixed 2-replica baseline telemetry
+# (74 valid intervals across 5 request scenarios).
+
+schema_version: "1.0.0"
+status: "provisional_calibrated"
+
+# Workload capacity parameters
+capacity_requests_per_second_per_replica: 25.0
+unit: "requests_per_second"
+target_utilization_ratio: 0.70
+safety_margin_ratio: 0.90
+
+# Replica bounds
+minimum_replicas: 1
+maximum_replicas: 10
+
+# Recommendation step limits
+maximum_scale_up_step: 3
+maximum_scale_down_step: 1
+
+# Floor threshold below which minimum_replicas is recommended
+minimum_prediction_rate: 0.0
+
+# Calibration provenance
+capacity_source: "phase_7b_fixed_baseline_telemetry"
+capacity_evidence_reference: "data/raw/scenarios/dataset-index.json"
+workload_profile: "cpu_iterations_100k_delay_20ms_payload_50b"

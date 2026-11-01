@@ -96,7 +96,7 @@ class LiveTelemetryReader:
                 base_url=self.config.prometheus_url,
                 timeout_seconds=self.config.request_timeout_seconds,
                 max_retries=self.config.maximum_retries,
-                allow_non_local=False,
+                allow_non_local=True,
             )
 
     def read_history(

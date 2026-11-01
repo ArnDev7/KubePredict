@@ -30,8 +30,11 @@ Can a guarded predictive autoscaler reduce latency and SLO violations relative t
 | Offline forecasting pipeline | ✅ Implemented (4 model families) |
 | Forecasting audit & model selection | ✅ Frozen model configuration |
 | Observe-only controller | ✅ Implemented (read-only) |
-| Replica calculation & scaling | 🔲 Planned (Phase 9B) |
-| Comparative experiments | 🔲 Planned (Phase 10) |
+| Dry-run capacity model & recommendations | ✅ Implemented (read-only) |
+| Forecast trust guard & guarded dry-run | ✅ Implemented (read-only) |
+| Rapid-change detection & reactive fallback | ✅ Implemented (dry-run) |
+| Predictive-reactive arbitration & dampening | ✅ Implemented (dry-run) |
+| Comparative experiments | 🔲 Planned (Phase 11) |
 
 > **Research constraint**: No claims of improved latency, resource efficiency, or prediction accuracy are made until experiments produce saved evidence. Planned behavior and measured results are clearly separated.
 
@@ -52,9 +55,10 @@ Can a guarded predictive autoscaler reduce latency and SLO violations relative t
 └───────────────────────────────┼─────────────────────────────────┘
                                 │
               ┌─────────────────▼─────────────────┐
-              │     Observe-Only Controller        │
-              │  (reads Prometheus, runs forecast, │
-              │   logs predictions — no writes)    │
+              │     Dry-Run Controller (9B)        │
+              │  (reads Prometheus + kubectl get,  │
+              │   forecasts, capacity model,       │
+              │   logs recommendations — no writes)│
               └─────────────────┬─────────────────┘
                                 │
               ┌─────────────────▼─────────────────┐
@@ -282,7 +286,70 @@ Read-only controller connecting the frozen forecaster to live Prometheus telemet
 
 See [docs/OBSERVE_ONLY_CONTROLLER.md](docs/OBSERVE_ONLY_CONTROLLER.md).
 
+## Dry-Run Controller & Capacity Model
+
+Predictive scaling recommendations generated via transparent capacity model without mutating the cluster:
+
+- Converts predicted request rate to required replicas via deterministic capacity equation
+- Configurable bounds (`[1, 10]`) and conservative step limits (`+3 / -1`)
+- Calibrated effective capacity: 15.75 req/s per replica (`provisional_calibrated` from Phase 7B)
+- Structured `ScalingDecision` records with full calculation details and `action_executed=false`
+- **Zero Kubernetes write capability** (verified by static AST audit)
+- `ENABLE_LIVE_SCALING=false`, `CONTROLLER_MODE=dry_run`
+
+```powershell
+.\scripts\controller\validate-capacity-model.ps1    # Validate capacity configuration
+.\scripts\controller\run-dry-run.ps1               # Start bounded dry-run loop
+.\scripts\controller\inspect-dry-run.ps1           # Inspect recommendation artifacts
+```
+
+See [docs/DRY_RUN_CONTROLLER.md](docs/DRY_RUN_CONTROLLER.md).
+
+## Forecast Trust Guard & Guarded Dry-Run (Phase 10A)
+
+Deterministic reliability barrier deciding whether point forecasts are eligible to influence autoscaling recommendations:
+
+- Evaluates telemetry freshness, forecast numerical validity, and error over sliding residual window
+- Computes window error metrics: MAE, RMSE, sMAPE, signed bias
+- Conservative thresholds (`MAE <= 10.0 req/s`, `sMAPE <= 50.0%`) derived from Phase 8B validation and Phase 9A/9B live residuals
+- If trusted: dry-run recommendation marked `recommendation_eligible=True`
+- If untrusted: recommendation eligibility blocked (`recommendation_eligible=False`)
+- **Untrusted forecasts do not invoke reactive fallback** (deferred to Phase 11)
+- **Zero Kubernetes write capability** (verified by static AST audit)
+- `action_executed` strictly `False` across all cycles and records
+
+```powershell
+.\scripts\controller\validate-trust-guard.ps1       # Validate trust guard configuration
+.\scripts\controller\run-guarded-dry-run.ps1       # Run bounded guarded dry-run loop
+.\scripts\controller\inspect-trust-guard-run.ps1   # Inspect trust decisions and audit evidence
+```
+
+See [docs/FORECAST_TRUST_GUARD.md](docs/FORECAST_TRUST_GUARD.md).
+
+## Dry-Run Arbitration, Rapid-Change Detection & Fallback (Phase 10B)
+
+Deterministic policy arbitration pipeline coordinating forecast trust, sudden surge detection, proportional CPU reactive fallback, replica bounds, step limits, cooldown dampening, and downscale stabilization:
+
+- **Rapid-Change Detector**: Deterministic request-rate surge detection over sliding window ($W \ge 2$, ratio $\ge 2.0\times$, $\Delta r \ge 5.0\,\text{req/s}$) with safe near-zero handling.
+- **Reactive Fallback**: HPA-style proportional fallback ($\lceil \text{replicas} \times \frac{\text{CPU}}{0.70} \rceil$) evaluating read-only `kubectl top pod` telemetry when forecasts are untrusted.
+- **Deterministic Arbitration Priority**:
+  1. `rapid_change_override`: verified surge overrides slower forecast
+  2. `predictive`: trusted forecast with capacity recommendation
+  3. `reactive_fallback`: untrusted forecast with valid CPU fallback
+  4. `no_recommendation`: missing or invalid telemetry (never silently fabricates current replicas)
+- **Policy Constraints**: Enforces $[1, 10]$ replica bounds, $[+3, -1]$ step limits, $60.0\,\text{s}$ cooldown dampening, and $90.0\,\text{s}$ downscale stabilization.
+- **Zero Kubernetes Writes**: `action_executed=False` unconditionally; verified by static AST audit.
+
+```powershell
+.\scripts\controller\validate-arbitration.ps1       # Validate all 5 configs and deterministic policy logic
+.\scripts\controller\run-arbitration-dry-run.ps1   # Run bounded arbitrated dry-run loop
+.\scripts\controller\inspect-arbitration-run.ps1   # Inspect arbitration decisions and audit evidence
+```
+
+See [docs/ARBITRATION_POLICY.md](docs/ARBITRATION_POLICY.md).
+
 ## Testing and Quality
+
 
 ```powershell
 # Run all tests
@@ -307,7 +374,7 @@ make type-check
 ## Security and Safe Defaults
 
 - `ENABLE_LIVE_SCALING=false` — scaling is disabled by default
-- `CONTROLLER_MODE=observe` — controller only observes, never writes
+- `CONTROLLER_MODE=observe` / `dry_run` — controller only observes and recommends, never writes
 - Container runs as non-root with read-only filesystem
 - Resource requests and limits on all pods
 - Grafana credentials generated at runtime via Kubernetes Secret
@@ -322,21 +389,23 @@ All runtime-generated data is git-ignored and stored locally:
 |---|---|
 | `data/raw/` | Raw telemetry datasets from scenario captures |
 | `data/processed/` | Forecasting evaluation outputs |
-| `experiments/output/` | Locust run outputs |
+| `experiments/output/` | Locust run and controller run outputs |
 | `results/` | Figures, raw results, summaries |
 
 These directories are preserved in the repository structure via `.gitkeep` files but their contents are never committed. Data can be reproduced by re-running the capture and evaluation pipelines.
 
 ## Limitations
 
-- Predictive scaling decisions and replica calculation are not yet implemented
-- Forecast guard, burst detection, and reactive fallback are planned (Phase 9B)
-- No live scaling actuator exists — the controller is strictly observe-only
-- Comparative experiments between strategies have not been conducted
-- The project uses a local kind cluster — not a production environment
+- Live scaling actuator and Kubernetes write permissions are not implemented — controller modes are strictly observe-only and dry-run
+- Rapid-change detector, reactive fallback, predictive/reactive arbitration, cooldown, and downscale stabilization are implemented in dry-run mode (Phase 10B); live scaling actuation is planned for Phase 11
+- Controller in-cluster Deployment and RBAC are not implemented
+- Comparative experiments between autoscaling strategies have not been conducted
+- The project uses a local kind cluster — not a production cloud environment
 - Forecasting models are lightweight baselines; no deep learning models are included
 
+
 ## Team
+
 
 Arnav Tiwari and team
 
