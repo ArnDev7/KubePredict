@@ -2,24 +2,24 @@
 
 **Adaptive Predictive Autoscaling for Cloud-Native Applications Using Kubernetes**
 
-A research-oriented university project comparing four autoscaling strategies for Kubernetes workloads:
+A research-oriented university project that designs, implements, and compares four autoscaling strategies for Kubernetes workloads, culminating in a fully deployed, in-cluster predictive controller with trust-guarded forecasting, reactive fallback, and policy arbitration.
 
-1. **Fixed replicas** — static, manually configured pod count
+1. **Fixed replicas** — static, manually configured pod count (baseline)
 2. **HPA baseline** — standard Kubernetes Horizontal Pod Autoscaler (reactive)
-3. **Predictive** — forecast-driven scaling using offline-trained time-series models *(planned)*
-4. **Guarded predictive** — prediction with confidence checks, burst override, drift handling, cooldown, bounded scaling, and reactive fallback *(planned)*
+3. **Predictive** — forecast-driven scaling using offline-trained time-series models
+4. **Guarded predictive** — prediction with confidence checks, burst override, drift handling, cooldown, bounded scaling, and reactive fallback
 
 ## Research Problem
 
 Can a guarded predictive autoscaler reduce latency and SLO violations relative to default HPA without excessive replica usage or unstable scaling under steady, periodic, ramp, burst, and drift workloads?
 
-## Current Status
+## Project Status
 
 | Component | Status |
 |---|---|
-| FastAPI workload service | ✅ Implemented |
-| Docker container (multi-stage, non-root) | ✅ Implemented |
-| Local Kubernetes cluster (kind) | ✅ Implemented |
+| FastAPI workload service | ✅ Complete |
+| Docker container (multi-stage, non-root) | ✅ Complete |
+| Local Kubernetes cluster (kind) | ✅ Complete |
 | Fixed-replica baseline | ✅ Deployed & verified |
 | Metrics Server | ✅ Deployed & verified |
 | HPA baseline | ✅ Validated (scale-up/down observed) |
@@ -29,72 +29,88 @@ Can a guarded predictive autoscaler reduce latency and SLO violations relative t
 | Telemetry capture pipeline | ✅ Implemented & validated |
 | Offline forecasting pipeline | ✅ Implemented (4 model families) |
 | Forecasting audit & model selection | ✅ Frozen model configuration |
-| Observe-only controller | ✅ Implemented (read-only) |
-| Dry-run capacity model & recommendations | ✅ Implemented (read-only) |
-| Forecast trust guard & guarded dry-run | ✅ Implemented (read-only) |
-| Rapid-change detection & reactive fallback | ✅ Implemented (dry-run) |
-| Predictive-reactive arbitration & dampening | ✅ Implemented (dry-run) |
-| Comparative experiments | 🔲 Planned (Phase 11) |
+| Observe-only controller | ✅ Implemented & deployed |
+| Dry-run capacity model & recommendations | ✅ Implemented & deployed |
+| Forecast trust guard & guarded dry-run | ✅ Implemented & deployed |
+| Rapid-change detection & reactive fallback | ✅ Implemented & deployed |
+| Predictive-reactive arbitration & dampening | ✅ Implemented & deployed |
+| In-cluster controller Deployment & RBAC | ✅ Deployed (dry-run mode) |
+| Demo scripts & documentation | ✅ Complete |
+| Test suite | ✅ 491 tests passing |
 
-> **Research constraint**: No claims of improved latency, resource efficiency, or prediction accuracy are made until experiments produce saved evidence. Planned behavior and measured results are clearly separated.
+> **Research constraint**: No claims of improved latency, resource efficiency, or prediction accuracy are made until formal comparative experiments produce saved evidence. Controller currently operates in **dry-run mode** — it observes and recommends but does not write to the Kubernetes API.
+
+---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Kubernetes Cluster (kind)                     │
-│                                                                 │
-│  ┌──────────────────┐   ┌────────────┐   ┌──────────────────┐  │
-│  │  workload-api     │   │ Prometheus │   │     Grafana      │  │
-│  │  (FastAPI, 2 pods)│◄──│  (scrape)  │──►│  (dashboards)    │  │
-│  └──────────────────┘   └─────┬──────┘   └──────────────────┘  │
-│                               │                                 │
-│  ┌──────────────────┐         │                                 │
-│  │  Metrics Server   │         │                                 │
-│  └──────────────────┘         │                                 │
-└───────────────────────────────┼─────────────────────────────────┘
-                                │
-              ┌─────────────────▼─────────────────┐
-              │     Dry-Run Controller (9B)        │
-              │  (reads Prometheus + kubectl get,  │
-              │   forecasts, capacity model,       │
-              │   logs recommendations — no writes)│
-              └─────────────────┬─────────────────┘
-                                │
-              ┌─────────────────▼─────────────────┐
-              │      Forecasting Engine            │
-              │  (Persistence, MA, EWMA,           │
-              │   Linear Trend — frozen config)    │
-              └───────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                   Kubernetes Cluster (kind-kubepredict-dev)        │
+│                                                                    │
+│  ┌───────────────────┐   ┌────────────┐   ┌────────────────────┐  │
+│  │  workload-api      │   │ Prometheus │   │      Grafana       │  │
+│  │  (FastAPI, 2 pods) │◄──│  (scrape)  │──►│  (dashboards)      │  │
+│  │                    │   └─────┬──────┘   └────────────────────┘  │
+│  │  POST /work        │         │                                  │
+│  │  GET  /healthz     │         │                                  │
+│  │  GET  /metrics     │         │                                  │
+│  └───────────────────┘         │                                  │
+│                                 │                                  │
+│  ┌───────────────────┐          │                                  │
+│  │   Metrics Server  │          │                                  │
+│  └───────────────────┘          │                                  │
+│                                 ▼                                  │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │              KubePredict Controller (in-cluster)             │  │
+│  │                                                              │  │
+│  │  1. Read request-rate history from Prometheus (PromQL)       │  │
+│  │  2. Run frozen forecasting model (EWMA / Linear Trend)       │  │
+│  │  3. Evaluate trust guard (MAE, sMAPE, residual window)       │  │
+│  │  4. Detect rapid-change surge                                │  │
+│  │  5. Arbitrate: predictive / reactive / rapid-override        │  │
+│  │  6. Apply bounds, step limits, cooldown, stabilisation       │  │
+│  │  7. Log recommendation — DRY-RUN (no Kubernetes writes)      │  │
+│  │                                                              │  │
+│  │  CONTROLLER_MODE=dry_run   ENABLE_LIVE_SCALING=false         │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture specification.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full specification.
+
+---
 
 ## Technology Stack
 
 | Layer | Technology |
 |---|---|
-| Application | Python 3.11+, FastAPI, Uvicorn |
-| Metrics | prometheus-client, Prometheus `v2.54.1` |
-| Visualization | Grafana OSS `11.2.0` |
-| Container | Docker (multi-stage, non-root) |
+| Application | Python 3.14, FastAPI, Uvicorn |
+| Metrics | prometheus-client, Prometheus v2.54.1 |
+| Visualization | Grafana OSS 11.2.0 |
+| Container | Docker (multi-stage, non-root, `python:3.14-slim`) |
 | Orchestration | Kubernetes via kind |
 | Load Testing | Locust |
 | Forecasting | NumPy, pandas |
-| Testing | pytest, Ruff, mypy |
+| Testing | pytest (491 tests), Ruff, mypy |
+
+---
 
 ## Repository Structure
 
 ```
 app/                    # FastAPI workload service
-config/                 # Type-safe settings and example configuration
-controller/             # Observe-only controller (Phase 9A)
+config/                 # Type-safe settings (pydantic-settings)
+controller/             # In-cluster controller — observer, dry-run, trust guard,
+│                       #   rapid-change, reactive fallback, arbitration
+│   config/             # Controller YAML configs (capacity, policy, trust guard)
 forecasting/            # Offline forecasting engine and frozen model config
 shared/                 # Shared enums, Pydantic models, validation
 load_testing/           # Locust scenario framework and YAML profiles
 experiments/            # Telemetry capture pipeline and experiment configs
 kubernetes/
   base/                 # Core Kustomize manifests (Namespace, Deployment, Service)
+  controller/           # Controller Deployment, RBAC, ConfigMap, Service
   kind/                 # Kind cluster topology
   metrics-server/       # Metrics Server with kind patch
   hpa/                  # HPA baseline overlay
@@ -106,38 +122,72 @@ monitoring/
 scripts/
   docker/               # Docker build, run, smoke-test, inspect, stop
   kubernetes/           # Cluster and component lifecycle scripts
+  controller/           # Controller build, deploy, run, inspect scripts
+  demo/                 # Demo helper scripts (start, load, stop, rehearse)
   load-testing/         # Scenario validation and smoke tests
   experiments/          # Telemetry capture scripts
   forecasting/          # Forecasting evaluation and audit scripts
-  controller/           # Observer controller scripts
 tests/
   unit/                 # Unit tests
   integration/          # Integration tests
 docs/                   # Architecture, operations, and methodology docs
 ```
 
+---
+
 ## Prerequisites
 
 - **Python** ≥ 3.11, < 3.15
-- **Docker Desktop** with Kubernetes support
+- **Docker Desktop**
 - **kubectl** CLI
 - **kind** (Kubernetes IN Docker)
 - **Git**
 
-## Local Python Setup
+---
+
+## Quick Start
+
+### 1. Python environment
 
 ```powershell
-# Create virtual environment
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-
-# Install runtime + development dependencies
 pip install -e ".[dev]"
 ```
 
-## Docker
+### 2. Run the workload API locally (no Kubernetes needed)
 
-Build and run the workload service container:
+```powershell
+.venv\Scripts\uvicorn.exe app.main:app --host 127.0.0.1 --port 8080 --reload
+```
+
+Open **http://127.0.0.1:8080/docs** — interactive Swagger UI.
+
+### 3. Full demo (Kubernetes cluster required)
+
+```powershell
+# In one persistent PowerShell window — keep it open
+.\scripts\demo\start-demo.ps1   # starts port-forwards: API 8000, Prom 9090, Grafana 3000
+
+# In a second window
+.\scripts\demo\load-demo.ps1    # sends bounded traffic through all endpoints
+
+# When done
+.\scripts\demo\stop-demo.ps1    # kills port-forwards, cleans .demo-state/
+```
+
+| URL | What you see |
+|-----|-------------|
+| `http://127.0.0.1:8080/docs` | Interactive API (Swagger UI) |
+| `http://127.0.0.1:9090` | Prometheus — query live metrics |
+| `http://127.0.0.1:9090/targets` | Scrape targets (2 workload pods should be UP) |
+| `http://127.0.0.1:3000` | Grafana — **KubePredict Overview** dashboard (login: `admin/admin`) |
+
+See [docs/DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md) for the full step-by-step guide and [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md) for the narration script.
+
+---
+
+## Docker
 
 ```powershell
 .\scripts\docker\build.ps1           # Build kubepredict-workload-api:0.1.0
@@ -146,40 +196,29 @@ Build and run the workload service container:
 .\scripts\docker\stop.ps1            # Stop and remove container
 ```
 
-- **Image**: `kubepredict-workload-api:0.1.0`
-- **Base**: `python:3.14-slim` (multi-stage, non-root)
+See [docs/DOCKER.md](docs/DOCKER.md).
 
-See [docs/DOCKER.md](docs/DOCKER.md) for details.
+---
 
 ## Kubernetes Setup
 
-### Cluster Creation
+### Cluster
 
 ```powershell
-.\scripts\kubernetes\check-prerequisites.ps1    # Verify Docker, kubectl, kind
-.\scripts\kubernetes\create-cluster.ps1          # Create kind cluster
-.\scripts\kubernetes\load-image.ps1              # Load image into kind nodes
-.\scripts\kubernetes\deploy-fixed.ps1            # Deploy fixed 2-replica baseline
+.\scripts\kubernetes\check-prerequisites.ps1
+.\scripts\kubernetes\create-cluster.ps1         # Creates kind-kubepredict-dev
+.\scripts\kubernetes\load-image.ps1
+.\scripts\kubernetes\deploy-fixed.ps1           # Deploy 2-replica fixed baseline
 ```
 
-- **Cluster**: `kubepredict-dev` (single control-plane node)
-- **Context**: `kind-kubepredict-dev`
+- **Cluster**: `kubepredict-dev` | **Context**: `kind-kubepredict-dev`
 - **Namespace**: `kubepredict-system`
-- **Deployment**: `kubepredict-workload-api` (2 fixed replicas)
-
-```powershell
-.\scripts\kubernetes\inspect-fixed.ps1           # Inspect deployment state
-.\scripts\kubernetes\port-forward.ps1 -LocalPort 8000   # Port-forward to localhost
-.\scripts\kubernetes\smoke-endpoints.ps1         # Smoke-test endpoints
-```
-
-See [docs/baselines/FIXED_REPLICA_BASELINE.md](docs/baselines/FIXED_REPLICA_BASELINE.md).
 
 ### Metrics Server
 
 ```powershell
-.\scripts\kubernetes\install-metrics-server.ps1  # Deploy Metrics Server v0.7.2
-.\scripts\kubernetes\inspect-metrics-server.ps1  # Verify resource metrics API
+.\scripts\kubernetes\install-metrics-server.ps1
+.\scripts\kubernetes\inspect-metrics-server.ps1
 ```
 
 See [docs/METRICS_SERVER.md](docs/METRICS_SERVER.md).
@@ -187,7 +226,7 @@ See [docs/METRICS_SERVER.md](docs/METRICS_SERVER.md).
 ### Prometheus
 
 ```powershell
-.\scripts\kubernetes\deploy-prometheus.ps1       # Deploy to kubepredict-monitoring
+.\scripts\kubernetes\deploy-prometheus.ps1
 .\scripts\kubernetes\port-forward-prometheus.ps1 -LocalPort 9090
 .\scripts\kubernetes\validate-prometheus-scrape.ps1
 ```
@@ -197,25 +236,26 @@ See [docs/PROMETHEUS.md](docs/PROMETHEUS.md).
 ### Grafana
 
 ```powershell
-.\scripts\kubernetes\deploy-grafana.ps1          # Deploy with auto-provisioned datasource
+.\scripts\kubernetes\deploy-grafana.ps1
 .\scripts\kubernetes\port-forward-grafana.ps1 -LocalPort 3000
 .\scripts\kubernetes\inspect-grafana.ps1
 ```
 
-- Dashboard: KubePredict Overview (18 panels, 5 rows)
-- Credentials: Generated at runtime via Kubernetes Secret
+- Dashboard: **KubePredict Overview** (18 panels, 5 rows)
 
 See [docs/GRAFANA.md](docs/GRAFANA.md).
 
 ### HPA Baseline
 
 ```powershell
-.\scripts\kubernetes\deploy-hpa.ps1              # Apply autoscaling/v2 HPA
-.\scripts\kubernetes\inspect-hpa.ps1             # Check HPA status
-.\scripts\kubernetes\remove-hpa.ps1 -ConfirmHpaRemoval   # Remove HPA safely
+.\scripts\kubernetes\deploy-hpa.ps1
+.\scripts\kubernetes\inspect-hpa.ps1
+.\scripts\kubernetes\remove-hpa.ps1 -ConfirmHpaRemoval
 ```
 
 See [docs/baselines/HPA_BASELINE.md](docs/baselines/HPA_BASELINE.md).
+
+---
 
 ## Request Scenarios
 
@@ -223,191 +263,186 @@ Five deterministic, configuration-driven traffic profiles built with Locust:
 
 | Scenario | Duration | Users | Pattern |
 |---|---|---|---|
-| `steady` | 180s | 12 | Constant moderate load |
-| `ramp` | 240s | 16 | Step-wise increase |
-| `periodic` | 240s | 14 | Repeated high/low cycles |
-| `sudden_increase` | 180s | 18 | Abrupt step-change |
-| `drift` | 240s | 18 | Changed duration and amplitude |
+| `steady` | 180 s | 12 | Constant moderate load |
+| `ramp` | 240 s | 16 | Step-wise increase |
+| `periodic` | 240 s | 14 | Repeated high/low cycles |
+| `sudden_increase` | 180 s | 18 | Abrupt step-change |
+| `drift` | 240 s | 18 | Changed duration and amplitude |
 
 ```powershell
-.\scripts\load-testing\validate-scenarios.ps1        # Offline dry-run validation
-.\scripts\load-testing\smoke-test.ps1 -LocalPort 18000  # 15s bounded smoke test
+.\scripts\load-testing\validate-scenarios.ps1
+.\scripts\load-testing\smoke-test.ps1 -LocalPort 18000
 ```
 
 See [docs/REQUEST_SCENARIOS.md](docs/REQUEST_SCENARIOS.md).
 
+---
+
 ## Telemetry Capture
 
-Aligned Prometheus telemetry and Kubernetes resource metrics captured during scenario execution:
-
 ```powershell
-.\scripts\experiments\validate-telemetry-plan.ps1    # Validate query definitions
+.\scripts\experiments\validate-telemetry-plan.ps1
 .\scripts\experiments\capture-scenario.ps1 -Scenario steady
-.\scripts\experiments\capture-all-scenarios.ps1      # All 5 scenarios
+.\scripts\experiments\capture-all-scenarios.ps1
 .\scripts\experiments\inspect-dataset.ps1 -Scenario steady
 ```
 
 Datasets are saved to `data/raw/scenarios/` (git-ignored). See [docs/TELEMETRY_DATASET.md](docs/TELEMETRY_DATASET.md).
 
+---
+
 ## Offline Forecasting
 
-Model-independent forecasting pipeline evaluated against captured telemetry:
+Four model families evaluated at 1/2/4-step horizons (15 s / 30 s / 60 s):
 
-- **Models**: Persistence (naive), Moving Average, EWMA, Linear Trend
-- **Target**: `request_rate_per_second` at 1/2/4-step horizons (15s/30s/60s)
-- **Split**: 60% train / 20% validation / 20% test (strict chronological)
-- **Metrics**: MAE (primary), RMSE, sMAPE, Bias
+| Model | Type |
+|---|---|
+| Persistence | Naïve last-value baseline |
+| Moving Average | Simple sliding window |
+| EWMA | Exponentially weighted — **selected** |
+| Linear Trend | Ordinary least squares |
+
+- **Split**: 60 % train / 20 % validation / 20 % test (strict chronological)
+- **Primary metric**: MAE; also RMSE, sMAPE, signed bias
 - **Frozen config**: `forecasting/config/final_forecaster.yaml`
 
 ```powershell
-.\scripts\forecasting\validate-data.ps1              # Validate datasets offline
-.\scripts\forecasting\evaluate-baselines.ps1         # Run evaluation
-.\scripts\forecasting\audit-selection.ps1            # Audit leakage and robustness
-.\scripts\forecasting\validate-final-model.ps1       # Validate frozen model
+.\scripts\forecasting\validate-data.ps1
+.\scripts\forecasting\evaluate-baselines.ps1
+.\scripts\forecasting\audit-selection.ps1
+.\scripts\forecasting\validate-final-model.ps1
 ```
 
 See [docs/FORECASTING.md](docs/FORECASTING.md) and [docs/FORECAST_SELECTION.md](docs/FORECAST_SELECTION.md).
 
-## Observe-Only Controller
+---
 
-Read-only controller connecting the frozen forecaster to live Prometheus telemetry:
+## In-Cluster Controller
 
-- Reads request-rate history from Prometheus (fixed PromQL query)
-- Invokes `ForecastingService` to produce predictions
-- Records pending forecasts, matches future actuals, computes residuals
-- **Zero Kubernetes write capability** (verified by static AST audit)
-- `ENABLE_LIVE_SCALING=false`, `CONTROLLER_MODE=observe`
+The controller is deployed as a Kubernetes Deployment in `kubepredict-system` and runs a full pipeline every 15 seconds:
 
-```powershell
-.\scripts\controller\validate-observer.ps1           # Validate configuration
-.\scripts\controller\run-observer.ps1                # Start observe-only loop
-.\scripts\controller\inspect-observer-run.ps1        # Inspect observation results
+```
+Prometheus ──► Forecasting Engine ──► Trust Guard ──► Arbitration ──► Log Decision
+                                                                    (no K8s writes)
 ```
 
-See [docs/OBSERVE_ONLY_CONTROLLER.md](docs/OBSERVE_ONLY_CONTROLLER.md).
+### Pipeline stages
 
-## Dry-Run Controller & Capacity Model
+| Stage | What it does |
+|---|---|
+| **Observer** | Reads `request_rate_per_second` history via fixed PromQL query |
+| **Forecasting** | Runs frozen EWMA/Linear-Trend model; produces point forecast |
+| **Trust Guard** | Checks residual MAE ≤ 10 req/s, sMAPE ≤ 50 % — blocks untrusted forecasts |
+| **Rapid-Change Detector** | Detects surges (ratio ≥ 2×, Δr ≥ 5 req/s) over sliding window |
+| **Capacity Model** | Converts forecast → required replicas (15.75 req/s/replica, bounds [1,10]) |
+| **Reactive Fallback** | HPA-style proportional fallback when forecast untrusted |
+| **Arbitration** | Priority: rapid-override → predictive → reactive → no-recommendation |
+| **Dampening** | 60 s cooldown, 90 s downscale stabilisation, ±3/−1 step limits |
 
-Predictive scaling recommendations generated via transparent capacity model without mutating the cluster:
-
-- Converts predicted request rate to required replicas via deterministic capacity equation
-- Configurable bounds (`[1, 10]`) and conservative step limits (`+3 / -1`)
-- Calibrated effective capacity: 15.75 req/s per replica (`provisional_calibrated` from Phase 7B)
-- Structured `ScalingDecision` records with full calculation details and `action_executed=false`
-- **Zero Kubernetes write capability** (verified by static AST audit)
-- `ENABLE_LIVE_SCALING=false`, `CONTROLLER_MODE=dry_run`
+### Controller scripts
 
 ```powershell
-.\scripts\controller\validate-capacity-model.ps1    # Validate capacity configuration
-.\scripts\controller\run-dry-run.ps1               # Start bounded dry-run loop
-.\scripts\controller\inspect-dry-run.ps1           # Inspect recommendation artifacts
+.\scripts\controller\build-controller.ps1        # Build & load controller image
+.\scripts\controller\deploy-controller.ps1       # Deploy to kubepredict-system
+.\scripts\controller\inspect-live-controller.ps1 # Show live pod logs & ConfigMap
+.\scripts\controller\run-dry-run.ps1             # Run a bounded local dry-run loop
+.\scripts\controller\run-guarded-dry-run.ps1     # With trust guard
+.\scripts\controller\run-arbitration-dry-run.ps1 # Full arbitration pipeline
+.\scripts\controller\inspect-dry-run.ps1         # Inspect decision artifacts
+.\scripts\controller\inspect-arbitration-run.ps1 # Inspect arbitration evidence
+.\scripts\controller\enable-live-validation.ps1  # ⚠️ Enable live scaling (guarded)
+.\scripts\controller\disable-live-scaling.ps1    # Restore safe defaults
+.\scripts\controller\remove-controller.ps1       # Remove from cluster
 ```
 
-See [docs/DRY_RUN_CONTROLLER.md](docs/DRY_RUN_CONTROLLER.md).
+See [docs/DRY_RUN_CONTROLLER.md](docs/DRY_RUN_CONTROLLER.md), [docs/FORECAST_TRUST_GUARD.md](docs/FORECAST_TRUST_GUARD.md), and [docs/ARBITRATION_POLICY.md](docs/ARBITRATION_POLICY.md).
 
-## Forecast Trust Guard & Guarded Dry-Run (Phase 10A)
+---
 
-Deterministic reliability barrier deciding whether point forecasts are eligible to influence autoscaling recommendations:
-
-- Evaluates telemetry freshness, forecast numerical validity, and error over sliding residual window
-- Computes window error metrics: MAE, RMSE, sMAPE, signed bias
-- Conservative thresholds (`MAE <= 10.0 req/s`, `sMAPE <= 50.0%`) derived from Phase 8B validation and Phase 9A/9B live residuals
-- If trusted: dry-run recommendation marked `recommendation_eligible=True`
-- If untrusted: recommendation eligibility blocked (`recommendation_eligible=False`)
-- **Untrusted forecasts do not invoke reactive fallback** (deferred to Phase 11)
-- **Zero Kubernetes write capability** (verified by static AST audit)
-- `action_executed` strictly `False` across all cycles and records
+## Demo
 
 ```powershell
-.\scripts\controller\validate-trust-guard.ps1       # Validate trust guard configuration
-.\scripts\controller\run-guarded-dry-run.ps1       # Run bounded guarded dry-run loop
-.\scripts\controller\inspect-trust-guard-run.ps1   # Inspect trust decisions and audit evidence
+# Start all port-forwards (keep this window open)
+.\scripts\demo\start-demo.ps1
+
+# Generate bounded traffic
+.\scripts\demo\load-demo.ps1
+
+# Full rehearsal (dry-run by default)
+.\scripts\demo\rehearse-demo.ps1
+
+# Optional live-scaling rehearsal (requires explicit flag)
+.\scripts\demo\rehearse-demo.ps1 -ConfirmLiveScalingDemo
+
+# Stop and clean up
+.\scripts\demo\stop-demo.ps1
 ```
 
-See [docs/FORECAST_TRUST_GUARD.md](docs/FORECAST_TRUST_GUARD.md).
+Docs: [DEMO_RUNBOOK.md](docs/DEMO_RUNBOOK.md) · [DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md) · [DEMO_COMMANDS.md](docs/DEMO_COMMANDS.md)
 
-## Dry-Run Arbitration, Rapid-Change Detection & Fallback (Phase 10B)
+---
 
-Deterministic policy arbitration pipeline coordinating forecast trust, sudden surge detection, proportional CPU reactive fallback, replica bounds, step limits, cooldown dampening, and downscale stabilization:
-
-- **Rapid-Change Detector**: Deterministic request-rate surge detection over sliding window ($W \ge 2$, ratio $\ge 2.0\times$, $\Delta r \ge 5.0\,\text{req/s}$) with safe near-zero handling.
-- **Reactive Fallback**: HPA-style proportional fallback ($\lceil \text{replicas} \times \frac{\text{CPU}}{0.70} \rceil$) evaluating read-only `kubectl top pod` telemetry when forecasts are untrusted.
-- **Deterministic Arbitration Priority**:
-  1. `rapid_change_override`: verified surge overrides slower forecast
-  2. `predictive`: trusted forecast with capacity recommendation
-  3. `reactive_fallback`: untrusted forecast with valid CPU fallback
-  4. `no_recommendation`: missing or invalid telemetry (never silently fabricates current replicas)
-- **Policy Constraints**: Enforces $[1, 10]$ replica bounds, $[+3, -1]$ step limits, $60.0\,\text{s}$ cooldown dampening, and $90.0\,\text{s}$ downscale stabilization.
-- **Zero Kubernetes Writes**: `action_executed=False` unconditionally; verified by static AST audit.
+## Testing & Quality
 
 ```powershell
-.\scripts\controller\validate-arbitration.ps1       # Validate all 5 configs and deterministic policy logic
-.\scripts\controller\run-arbitration-dry-run.ps1   # Run bounded arbitrated dry-run loop
-.\scripts\controller\inspect-arbitration-run.ps1   # Inspect arbitration decisions and audit evidence
-```
-
-See [docs/ARBITRATION_POLICY.md](docs/ARBITRATION_POLICY.md).
-
-## Testing and Quality
-
-
-```powershell
-# Run all tests
-.venv\Scripts\python.exe -m pytest
-
-# Lint
-.venv\Scripts\python.exe -m ruff check .
-
-# Format check
-.venv\Scripts\python.exe -m ruff format --check .
-
-# Type check
+.venv\Scripts\python.exe -m pytest               # 491 tests
+.venv\Scripts\python.exe -m ruff check .         # Lint
+.venv\Scripts\python.exe -m ruff format --check .# Format check
 .venv\Scripts\python.exe -m mypy app controller forecasting config shared load_testing experiments tests
+```
 
-# Or use Makefile shortcuts
+Or via Makefile:
+
+```powershell
 make test
 make lint
 make format-check
 make type-check
 ```
 
-## Security and Safe Defaults
+---
 
-- `ENABLE_LIVE_SCALING=false` — scaling is disabled by default
-- `CONTROLLER_MODE=observe` / `dry_run` — controller only observes and recommends, never writes
-- Container runs as non-root with read-only filesystem
+## Security & Safe Defaults
+
+- `ENABLE_LIVE_SCALING=false` — live scaling disabled by default
+- `CONTROLLER_MODE=dry_run` — controller only observes and recommends; never writes
+- Container runs as non-root (`appuser`) with read-only filesystem
 - Resource requests and limits on all pods
 - Grafana credentials generated at runtime via Kubernetes Secret
-- No credentials, tokens, or secrets stored in the repository
-- Static write-capability audit verifies zero Kubernetes write imports
+- No secrets, tokens, or credentials stored in the repository
+- Static AST audit verifies zero Kubernetes write-API imports in controller modules
+
+---
 
 ## Generated Data Policy
 
-All runtime-generated data is git-ignored and stored locally:
+All runtime-generated data is git-ignored:
 
 | Directory | Contents |
 |---|---|
-| `data/raw/` | Raw telemetry datasets from scenario captures |
+| `data/raw/` | Raw telemetry datasets |
 | `data/processed/` | Forecasting evaluation outputs |
-| `experiments/output/` | Locust run and controller run outputs |
+| `experiments/output/` | Controller and Locust run outputs |
 | `results/` | Figures, raw results, summaries |
+| `.demo-state/` | Temporary demo port-forward PIDs (cleaned on stop) |
 
-These directories are preserved in the repository structure via `.gitkeep` files but their contents are never committed. Data can be reproduced by re-running the capture and evaluation pipelines.
+---
 
 ## Limitations
 
-- Live scaling actuator and Kubernetes write permissions are not implemented — controller modes are strictly observe-only and dry-run
-- Rapid-change detector, reactive fallback, predictive/reactive arbitration, cooldown, and downscale stabilization are implemented in dry-run mode (Phase 10B); live scaling actuation is planned for Phase 11
-- Controller in-cluster Deployment and RBAC are not implemented
-- Comparative experiments between autoscaling strategies have not been conducted
-- The project uses a local kind cluster — not a production cloud environment
-- Forecasting models are lightweight baselines; no deep learning models are included
+- Controller operates in **dry-run mode only** — live scaling actuation requires explicit opt-in via `enable-live-validation.ps1` and is guarded by multiple pre-condition checks
+- Formal comparative experiments (steady, ramp, periodic, burst, drift across all four modes) have not yet been run — no performance claims are made
+- Local `kind` cluster only — not a production cloud environment
+- Forecasting models are lightweight statistical baselines; no deep learning models included
+- Grafana screenshots cannot be captured programmatically — manual screen recording is required for the demo
 
+---
 
 ## Team
 
-
 Arnav Tiwari and team
+
+---
 
 ## References
 
