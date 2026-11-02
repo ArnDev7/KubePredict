@@ -41,8 +41,8 @@ tmp/
 temp/
 
 # Generated experiment output
+.demo-state/
 experiments/output/*
-!experiments/output/.gitkeep
 
 # Generated raw and processed data
 data/raw/*
